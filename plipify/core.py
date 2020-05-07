@@ -1,5 +1,5 @@
 """
-test.py
+core.py
 PLIPify project
 
 Handles the primary functions
