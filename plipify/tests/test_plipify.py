@@ -7,6 +7,7 @@ import plipify
 import pytest
 import sys
 
+
 def test_plipify_imported():
     """Sample test, will always pass so long as import statement worked"""
     assert "plipify" in sys.modules
