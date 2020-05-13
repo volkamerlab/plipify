@@ -1,3 +1,6 @@
+"""
+core.py
+
 This module collects the base objects that will be
 used across the different stages of the pipeline.
 
