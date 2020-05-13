@@ -1,6 +1,7 @@
 PLIPify: Exploring SARS-CoV-2 Main Protease Interaction Hotspots Using a Novel Protein-Ligand Interaction Frequency Fingerprint
 
 ==============================
+
 _Powered by: [Volkamer lab](http://volkamerlab.org/)_
 
 This is part of a community effort to rapidly find new hits to target the virus main protease.
