@@ -79,8 +79,7 @@ def analyze_interactions(pdbfile):
             "metal",
         )
         interactions = {
-            k: [getattr(binding_site, k + "_features")]
-            + getattr(binding_site, k + "_info")
+            k: [getattr(binding_site, k + "_features")] + getattr(binding_site, k + "_info")
             for k in keys
         }
         sites[key] = interactions
@@ -132,18 +131,14 @@ def show_plip_data(interactions):
             if not site_name.startswith("LIG"):
                 continue  # fragments are labeled as LIG; other "sites" detected by PLIP are XRC artefacts
             display(Markdown("## Site {}".format(site_name)))
-            for interaction_type, dataframe in site_to_dataframes(
-                site_interactions
-            ).items():
+            for interaction_type, dataframe in site_to_dataframes(site_interactions).items():
                 if dataframe is not None:
                     display(Markdown("### {}".format(interaction_type)))
                     display(dataframe)
 
 
 ###### FINGERPRINTS ######
-def interaction_fingerprint(
-    residue_dictionary, interaction_dict, residue_list, interaction_type
-):
+def interaction_fingerprint(residue_dictionary, interaction_dict, residue_list, interaction_type):
     """
     Create one indivual fingerprint for one structure.
     """
@@ -164,9 +159,7 @@ def interaction_fingerprint_list(interactions, residue_dict, interaction_dict):
         for site_name, site_interactions in sites.items():
             if not site_name.startswith("LIG"):
                 continue  # fragments are labeled as LIG; other "sites" detected by PLIP are XRC artefacts
-            for interaction_type, dataframe in site_to_dataframes(
-                site_interactions
-            ).items():
+            for interaction_type, dataframe in site_to_dataframes(site_interactions).items():
                 if dataframe is not None:
                     residue_nos = dataframe["RESNR"].tolist()
                     fp = interaction_fingerprint(
