@@ -3,8 +3,6 @@ Unit and regression test for the plipify package.
 """
 
 # Import package, test suite, and other packages as needed
-#import plipify
-#import pytest
 import sys
 
 
