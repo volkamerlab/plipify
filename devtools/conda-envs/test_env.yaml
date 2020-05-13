@@ -9,7 +9,7 @@ dependencies:
   - pip
   - pandas
   - tqdm
-  - openbabel 2.4
+  - openbabel 2.4.1
   - numpy
   - lxml
   - jupyter
