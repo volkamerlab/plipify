@@ -15,6 +15,7 @@ dependencies:
   - jupyter
   - notebook
   - nglview
+  - plip
     # Testing
   - pytest
   - pytest-cov
