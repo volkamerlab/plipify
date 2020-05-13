@@ -1,15 +1,11 @@
-plipify
+PLIPify: Exploring SARS-CoV-2 Main Protease Interaction Hotspots Using a Novel Protein-Ligand Interaction Frequency Fingerprint
 ==============================
-[//]: # (Badges)
-[![Travis Build Status](https://travis-ci.com/REPLACE_WITH_OWNER_ACCOUNT/plipify.svg?branch=master)](https://travis-ci.com/REPLACE_WITH_OWNER_ACCOUNT/plipify)
-[![AppVeyor Build status](https://ci.appveyor.com/api/projects/status/REPLACE_WITH_APPVEYOR_LINK/branch/master?svg=true)](https://ci.appveyor.com/project/REPLACE_WITH_OWNER_ACCOUNT/plipify/branch/master)
-[![codecov](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/plipify/branch/master/graph/badge.svg)](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/plipify/branch/master)
+Protein-ligand interactions are an essential part of research in structural bioinformatics and drug discovery. Tools such as PLIP enable us to get detailed interaction profiles for single structures. However, combining this data for multiple structures of a protein to identify possible interaction hotspots remains difficult. The aim of this project is to create and visualize a fingerprint that represents the protein-ligand interaction frequencies over multiple structures of the same protein. While the fingerprint creation pipeline should be widely applicable, the main focus will be on SARS-CoV-2, more precisely a set of co-crystallized fragment structures of the virus main protease (MPro), as this project is part of a community effort to rapidly find new hits to target MPro.  
 
-PLIPify project
 
-### Copyright
+### Contributors
 
-Copyright (c) 2020, fritzfra
+Jaime Rodríguez-Guerra, Andrea Volkamer, Franziska Fritz
 
 
 #### Acknowledgements
