@@ -112,7 +112,7 @@ class BaseResidue:
         if name in self._ALLOWED_RESIDUE_NAMES:
             return name
         raise ValueError(
-            "Residue name {} is not valid! Must be one of ({}})".format(
+            "Residue name {} is not valid! Must be one of ({})".format(
                 name, ", ".join(self._ALLOWED_RESIDUE_NAMES)
             )
         )
@@ -154,7 +154,13 @@ class BindingSite:
     def __repr__(self):
         return "<BindingSite with name='{}' and {} interactions>".format(
             self.name,
-            len([interaction for interaction in self.interactions.values() if interaction]),
+            len(
+                [
+                    interaction
+                    for interaction in self.interactions.values()
+                    if interaction
+                ]
+            ),
         )
 
 
@@ -204,7 +210,9 @@ class Structure:
 
         residues = []
         for r in pdbcomplex.resis:
-            residue = ProteinResidue(name=r.GetName(), seq_index=r.GetNum(), chain=r.GetChain())
+            residue = ProteinResidue(
+                name=r.GetName(), seq_index=r.GetNum(), chain=r.GetChain()
+            )
             residues.append(residue)
 
         structure = cls(residues=residues)
@@ -221,10 +229,15 @@ class Structure:
             interactions_by_type = defaultdict(list)
             for shorthand, InteractionType in cls.INTERACTION_KEYS.items():
                 features = getattr(report, shorthand + "_features")
-                interactions = []  # list of BaseInteraction Subclasses (depending on type)
+                interactions = (
+                    []
+                )  # list of BaseInteraction Subclasses (depending on type)
                 for interaction_data in getattr(report, shorthand + "_info"):
                     interaction_dict = dict(zip(features, interaction_data))
-                    seq_index, chain = interaction_dict["RESNR"], interaction_dict["RESCHAIN"]
+                    seq_index, chain = (
+                        interaction_dict["RESNR"],
+                        interaction_dict["RESCHAIN"],
+                    )
                     residue = structure.get_residue_by(seq_index=seq_index, chain=chain)
                     interaction_obj = InteractionType(interaction=interaction_dict)
                     interactions.append(interaction_obj)
@@ -256,12 +269,16 @@ class Structure:
         if seq_index is not None:
             for residue in self.residues:
                 if residue.seq_index == seq_index:
-                    if chain is None:  # TODO: Check there are no other residues with same index!
+                    if (
+                        chain is None
+                    ):  # TODO: Check there are no other residues with same index!
                         break
                     elif residue.chain == chain:
                         break
             else:  # break not reached!
                 raise ValueError(
-                    "No residue with such sequence index: {}, {}!".format(seq_index, chain)
+                    "No residue with such sequence index: {}, {}!".format(
+                        seq_index, chain
+                    )
                 )
             return residue

@@ -31,12 +31,12 @@ def read_residues(path):
     return residues
 
 
-def divide_list(l, n):
+def divide_list(list_name, n):
     """
     Split list into lists of given size.
     """
-    for i in range(0, len(l), n):
-        yield l[i : i + n]
+    for i in range(0, len(list_name), n):
+        yield list_name[i : i + n]
 
 
 def residue_dictionary(residues):
@@ -114,7 +114,7 @@ def get_plip_data(data, name_file):
     Get data from plip and store it in a dictionary.
     """
     with open(os.path.join(data, name_file)) as f:
-        non_covalent_filenames = [l.strip() for l in f if l.strip()]
+        non_covalent_filenames = [line.strip() for line in f if line.strip()]
     interactions = {}
     for filename in tqdm(non_covalent_filenames):
         full_filename = os.path.join(data, filename)
