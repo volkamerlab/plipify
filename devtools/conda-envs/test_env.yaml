@@ -12,6 +12,7 @@ dependencies:
   - openbabel 2.4.1
   - numpy
   - lxml
+  - future
   - jupyter
   - notebook
   - nglview
