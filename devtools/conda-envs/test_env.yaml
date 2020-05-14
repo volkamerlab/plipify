@@ -1,15 +1,26 @@
 name: test
 channels:
+  - conda-forge
+  - defaults
+  - openbabel
 dependencies:
-    # Base depends
-  - python
+  # Base depends
+  - python 2.7
   - pip
-
+  - pandas
+  - tqdm
+  - openbabel 2.4.1
+  - numpy
+  - lxml
+  - future
+  - jupyter
+  - notebook
+  - nglview
     # Testing
   - pytest
   - pytest-cov
 
   # Pip-only installs
   - pip:
-    - codecov
-
+    # needs to be installed manually with --no-deps
+    # - https://github.com/ssalentin/plip/archive/stable.zip
