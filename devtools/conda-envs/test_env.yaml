@@ -16,9 +16,13 @@ dependencies:
   - jupyter
   - notebook
   - nglview
+  - matplotlib
+  - plotly
+  - seaborn
     # Testing
   - pytest
   - pytest-cov
+
 
   # Pip-only installs
   - pip:
