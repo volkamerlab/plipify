@@ -69,3 +69,14 @@ class MappedFingerprint:
             )
         assert len(fingerprint) == fp_length, "Expected length not matched"
         return fingerprint
+
+class FrequencyFingerprint:
+    """
+    This class will take multiple protein-ligand structures of the same protein,
+    analyze its interactions and create an interactions frequency fingerprint.
+
+    Parameters
+    ----------
+    """
+    def calculate(structures, names, residues):
+        #

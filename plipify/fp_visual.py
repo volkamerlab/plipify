@@ -77,16 +77,13 @@ def fingerprint_heatmap(residue_file, interaction_types, fingerprint):
 
 
 def fingerprint_table(residue_file, interaction_types, count_fp, freq_fp, fp_type):
-    # , table_type
+    """
+    Create table visualization for fingerprint selection.
+    """
     if fp_type == "frequency":
         fp_table_html(residue_file, interaction_types, freq_fp)
     else:
         fp_table_html(residue_file, interaction_types, count_fp)
-        # round freq fp
-    # if table_type == 'full':
-    #
-    # else:
-    #
 
 
 def prepare_tabledata(residue_file, interaction_types, fingerprint):
@@ -102,12 +99,18 @@ def prepare_tabledata(residue_file, interaction_types, fingerprint):
 
 
 def cell_colour(fp_index, interaction_index):
+    """
+    Extract cell colour for specific residue interaction.
+    """
     interaction_type = interaction_index[fp_index]
     interaction_colour = interaction_colours[interaction_type]
     return interaction_colour, interaction_type
 
 
 def fp_table_html(residue_file, interaction_types, fingerprint):
+    """
+    Create HTML and CSS layout for the fingerprint table.
+    """
     res_fp, interaction_index = prepare_tabledata(
         residue_file, interaction_types, fingerprint
     )
@@ -171,7 +174,6 @@ def fp_table_html(residue_file, interaction_types, fingerprint):
         divide_list(fingerprint, len(interaction_types))
     )  # divide fp for each redisue
     residues = read_residues(residue_file)
-    ints = len(interaction_types)
     html_str = html_str + '<table style="border:1px solid;border-color:#9698ed"><tr>'
     for res in residues:
         html_str = (
