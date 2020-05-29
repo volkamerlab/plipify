@@ -14,6 +14,7 @@ Namely:
 """
 
 from collections import defaultdict
+from collections import Counter
 
 from plip.modules.preparation import PDBComplex
 from plip.modules.report import BindingSiteReport
@@ -126,12 +127,27 @@ class ProteinResidue(BaseResidue):
     # TODO: Fill list in!
     _ALLOWED_RESIDUE_NAMES = []
 
-    def __init__(self, name, seq_index, chain, interactions=None):
+    def __init__(self, name, seq_index, chain, interactions=None, structure=None):
         self.seq_index = seq_index
         self.name = name
         self.chain = chain
         self.interactions = interactions or []
+        self.structure = structure
 
+    def count_interactions(self):
+        class_to_key = {v: k for (k, v) in Structure.INTERACTION_KEYS.items()}
+        interaction_types = [class_to_key[interaction.__class__] for interaction in self.interactions]
+        counter = Counter(interaction_types)
+        return counter
+
+    def __repr__(self):
+        if self.interactions:
+            return "<ProteinResidue {}, and {} interactions>".format(self.identifier, len(self.interactions))
+        return "<ProteinResidue {}>".format(self.identifier)
+
+    @property
+    def identifier(self):
+        return "{}:{}.{}".format(self.name, self.seq_index, self.chain)
 
 class LigandResidue(BaseResidue):
     """
@@ -194,6 +210,7 @@ class Structure:
         self.residues = residues
         self.ligands = ligands
         self.binding_sites = binding_sites
+        self._path = None
 
     @classmethod
     def from_pdbfile(cls, path, only_ligands=None):
@@ -208,14 +225,20 @@ class Structure:
         pdbcomplex = PDBComplex()
         pdbcomplex.load_pdb(path)
 
+        structure = cls()
+        structure._path = path
+
         residues = []
         for r in pdbcomplex.resis:
             residue = ProteinResidue(
-                name=r.GetName(), seq_index=r.GetNum(), chain=r.GetChain()
+                name=r.GetName(),
+                seq_index=r.GetNum(),
+                chain=r.GetChain(),
+                structure=structure,
             )
             residues.append(residue)
 
-        structure = cls(residues=residues)
+        structure.residues = residues
 
         ligands = pdbcomplex.ligands
         for ligand in ligands:
@@ -229,9 +252,8 @@ class Structure:
             interactions_by_type = defaultdict(list)
             for shorthand, InteractionType in cls.INTERACTION_KEYS.items():
                 features = getattr(report, shorthand + "_features")
-                interactions = (
-                    []
-                )  # list of BaseInteraction Subclasses (depending on type)
+                # list of BaseInteraction Subclasses (depending on type)
+                interactions = []
                 for interaction_data in getattr(report, shorthand + "_info"):
                     interaction_dict = dict(zip(features, interaction_data))
                     seq_index, chain = (

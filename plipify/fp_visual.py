@@ -19,41 +19,14 @@ interaction_colours = {
 }
 
 
-def prepare_plotdata(residue_file, interaction_types, fingerprint):
-    """
-    Prepare fingerprint data for plotting.
-    """
-    residues = read_residues(residue_file)
-    res_fp = list(divide_list(fingerprint, len(interaction_types)))
-    fp_df = pd.DataFrame(res_fp, columns=interaction_types, index=residues)
-    fp_df = fp_df.T
-    df_plot = fp_df.loc[
-        :, (fp_df != 0).any(axis=0)
-    ]  # change to eliminate redundant transpose
-    plotdata = df_plot.T
-    return plotdata
 
-
-def fingerprint_barplot(residue_file, interaction_types, fingerprint):
+def fingerprint_barplot(plotdata):
     """
     Visualize fingerprint as barplot either based on count or fp_type
     """
-    plotdata = prepare_plotdata(residue_file, interaction_types, fingerprint)
-
-    # Plotly Bar Plot
-    resis = map(str, list(plotdata.index))
-    resis = ["res " + s for s in resis]
     fig = go.Figure(
-        data=[
-            go.Bar(name="hydrophobic", x=resis, y=list(plotdata["hydrophobic"])),
-            go.Bar(name="hbond", x=resis, y=list(plotdata["hbond"])),
-            go.Bar(name="waterbridge", x=resis, y=list(plotdata["waterbridge"])),
-            go.Bar(name="saltbridge", x=resis, y=list(plotdata["saltbridge"])),
-            go.Bar(name="pistacking", x=resis, y=list(plotdata["pistacking"])),
-            go.Bar(name="pication", x=resis, y=list(plotdata["pication"])),
-            go.Bar(name="halogen", x=resis, y=list(plotdata["halogen"])),
-            go.Bar(name="metal", x=resis, y=list(plotdata["metal"])),
-        ]
+        data=[go.Bar(name=interaction, x=list(plotdata.index), y=list(plotdata[interaction]))
+              for interaction in sorted(plotdata.columns, reverse=True)],
     )
     # Change the bar mode
     fig.update_layout(
@@ -65,11 +38,10 @@ def fingerprint_barplot(residue_file, interaction_types, fingerprint):
     fig.show()
 
 
-def fingerprint_heatmap(residue_file, interaction_types, fingerprint):
+def fingerprint_heatmap(plotdata):
     """
     Visualize fingerprint as heatmap either based on count or fp_type
     """
-    plotdata = prepare_plotdata(residue_file, interaction_types, fingerprint)
     fig, ax = plt.subplots(figsize=(10, 7))  # plot size
     sns.heatmap(plotdata.T, annot=True, cmap="YlGnBu", ax=ax)
     plt.xlabel("Residues")
@@ -176,7 +148,7 @@ def fp_table_html(residue_file, interaction_types, fingerprint, full):
     margin-left: -5px;
     border-width: 5px;
     border-style: solid;
-    border-color: 
+    border-color:
     }
 
 
