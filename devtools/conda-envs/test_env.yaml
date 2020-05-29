@@ -23,4 +23,4 @@ dependencies:
   # Pip-only installs
   - pip:
     # needs to be installed manually with --no-deps
-    # - https://github.com/ssalentin/plip/archive/stable.zip
+    # - https://github.com/ssalentin/plip/archive/8c36e35fb7f44992a14db4f3626316892a77e81f.zip

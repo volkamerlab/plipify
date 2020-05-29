@@ -49,7 +49,7 @@ jobs:
           conda info
           python devtools/scripts/create_conda_env.py -n=test -p=$PYVER devtools/conda-envs/test_env.yaml
           conda activate test
-          python -m pip install --no-deps https://github.com/ssalentin/plip/archive/stable.zip
+          python -m pip install --no-deps https://github.com/ssalentin/plip/archive/8c36e35fb7f44992a14db4f3626316892a77e81f.zip
 
       - name: Install package
         shell: bash
