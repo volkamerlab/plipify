@@ -19,6 +19,7 @@ dependencies:
   - matplotlib
   - plotly
   - seaborn
+  - ipywidgets
     # Testing
   - pytest
   - pytest-cov
