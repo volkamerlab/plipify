@@ -19,14 +19,17 @@ interaction_colours = {
 }
 
 
-
 def fingerprint_barplot(plotdata):
     """
     Visualize fingerprint as barplot either based on count or fp_type
     """
     fig = go.Figure(
-        data=[go.Bar(name=interaction, x=list(plotdata.index), y=list(plotdata[interaction]))
-              for interaction in sorted(plotdata.columns, reverse=True)],
+        data=[
+            go.Bar(
+                name=interaction, x=list(plotdata.index), y=list(plotdata[interaction])
+            )
+            for interaction in sorted(plotdata.columns, reverse=True)
+        ],
     )
     # Change the bar mode
     fig.update_layout(
@@ -48,40 +51,16 @@ def fingerprint_heatmap(plotdata):
     plt.ylabel("Interaction Types")
 
 
-def fingerprint_table(
-    residue_file, interaction_types, count_fp, freq_fp, fp_type, full
-):
-    """
-    Create table visualization for fingerprint selection.
-    """
-    if fp_type == "frequency":
-        fp_table_html(residue_file, interaction_types, freq_fp, full)
-    else:
-        fp_table_html(residue_file, interaction_types, count_fp, full)
-
-
-def prepare_tabledata(residue_file, interaction_types, fingerprint, full):
+def prepare_tabledata(fp_df):
     """
     Create interaction index dictionary for fingerprint table.
     """
-    if full == True:
-        residues = read_residues(residue_file)
-        res_fp = list(divide_list(fingerprint, len(interaction_types)))
-        fp_id = range(0, len(residues) * len(interaction_types))  # all fp indices
-        interaction_list = interaction_types * len(residues)
-        interaction_index = dict(zip(fp_id, interaction_list))
-    else:
-        residues = read_residues(residue_file)
-        res_fp = list(divide_list(fingerprint, len(interaction_types)))
-        fp_df = pd.DataFrame(res_fp, columns=interaction_types, index=residues)
-        fp_df = fp_df.T
-        fp_df = fp_df.loc[:, (fp_df != 0).any(axis=0)]
-        fp_df = fp_df.T
-        residues = list(fp_df.index)
-        res_fp = fp_df.values.tolist()
-        fp_id = range(0, len(residues) * len(interaction_types))  # all fp indices
-        interaction_list = interaction_types * len(residues)
-        interaction_index = dict(zip(fp_id, interaction_list))
+    residues = list(fp_df.index)
+    interaction_types = list(fp_df.columns)
+    res_fp = fp_df.values.tolist()
+    fp_id = range(0, len(residues) * len(interaction_types))  # all fp indices
+    interaction_list = interaction_types * len(residues)
+    interaction_index = dict(zip(fp_id, interaction_list))
     return res_fp, interaction_index, residues
 
 
@@ -94,13 +73,12 @@ def cell_colour(fp_index, interaction_index):
     return interaction_colour, interaction_type
 
 
-def fp_table_html(residue_file, interaction_types, fingerprint, full):
+def fingerprint_table(fp_df):
     """
     Create HTML and CSS layout for the fingerprint table.
     """
-    res_fp, interaction_index, residues = prepare_tabledata(
-        residue_file, interaction_types, fingerprint, full
-    )
+    res_fp, interaction_index, residues = prepare_tabledata(fp_df)
+    interaction_types = list(fp_df.columns)
     html_legend = (
         "<h3>Interactions in pre-defined binding site residues</h3><table><tr>"
     )
