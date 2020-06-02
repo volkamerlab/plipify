@@ -8,14 +8,14 @@ import ipywidgets as widgets
 from ipywidgets import HBox
 
 interaction_colours = {
-    "hydrophobic": "#4d4dff",
-    "hbond": "#ff3300",
-    "waterbridge": "#00cc7a",
-    "saltbridge": "#cc66ff",
-    "pistacking": "#ff9933",
-    "pication": "#33ccff",
-    "halogen": "#ff6699",
-    "metal": "#ace600",
+    "hydrophobic": "#33ccff",
+    "hbond": "#ff6699",
+    "waterbridge": "#4d4dff",
+    "saltbridge": "#ff3300,
+    "pistacking": "#00cc7a",
+    "pication": "#cc66ff",
+    "halogen": "#ace600",
+    "metal": "#ff9933","#ff9933"
 }
 
 
