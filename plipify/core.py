@@ -136,18 +136,23 @@ class ProteinResidue(BaseResidue):
 
     def count_interactions(self):
         class_to_key = {v: k for (k, v) in Structure.INTERACTION_KEYS.items()}
-        interaction_types = [class_to_key[interaction.__class__] for interaction in self.interactions]
+        interaction_types = [
+            class_to_key[interaction.__class__] for interaction in self.interactions
+        ]
         counter = Counter(interaction_types)
         return counter
 
     def __repr__(self):
         if self.interactions:
-            return "<ProteinResidue {}, and {} interactions>".format(self.identifier, len(self.interactions))
+            return "<ProteinResidue {}, and {} interactions>".format(
+                self.identifier, len(self.interactions)
+            )
         return "<ProteinResidue {}>".format(self.identifier)
 
     @property
     def identifier(self):
         return "{}:{}.{}".format(self.name, self.seq_index, self.chain)
+
 
 class LigandResidue(BaseResidue):
     """
@@ -266,7 +271,8 @@ class Structure:
                     residue.interactions.append(interaction_obj)
                 interactions_by_type[shorthand].extend(interactions)
             binding_site = BindingSite(interactions_by_type, name=key)
-            binding_sites.append(binding_site)
+            if binding_site.name.startswith("LIG"):
+                binding_sites.append(binding_site)
 
         structure.binding_sites = binding_sites
         return structure

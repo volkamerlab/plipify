@@ -11,11 +11,11 @@ interaction_colours = {
     "hydrophobic": "#33ccff",
     "hbond": "#ff6699",
     "waterbridge": "#4d4dff",
-    "saltbridge": "#ff3300,
+    "saltbridge": "#ff3300",
     "pistacking": "#00cc7a",
     "pication": "#cc66ff",
     "halogen": "#ace600",
-    "metal": "#ff9933","#ff9933"
+    "metal": "#ff9933",
 }
 
 
@@ -78,7 +78,7 @@ def fingerprint_table(fp_df):
     Create HTML and CSS layout for the fingerprint table.
     """
     res_fp, interaction_index, residues = prepare_tabledata(fp_df)
-    interaction_types = list(fp_df.columns)
+
     html_legend = (
         "<h3>Interactions in pre-defined binding site residues</h3><table><tr>"
     )
