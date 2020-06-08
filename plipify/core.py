@@ -218,7 +218,7 @@ class Structure:
         self._path = None
 
     @classmethod
-    def from_pdbfile(cls, path, only_ligands=None):
+    def from_pdbfile(cls, path, only_ligands=None, ligand_identifier=None):
         """
         Parameters
         ----------
@@ -255,7 +255,7 @@ class Structure:
         for key, site in sorted(pdbcomplex.interaction_sets.items()):
             report = BindingSiteReport(site)
             interactions_by_type = defaultdict(list)
-            if key.startswith("LIG"):
+            if ligand_identifier is None or key.startswith(ligand_identifier):
                 for shorthand, InteractionType in cls.INTERACTION_KEYS.items():
                     features = getattr(report, shorthand + "_features")
                     # list of BaseInteraction Subclasses (depending on type)
