@@ -2,8 +2,9 @@
 fingerprints.py
 ---------------
 
-Factories that take a Structure and produce
-an interaction fingerprint
+Factories that take a Structure or multiple structures and produce
+an interaction fingerprint.
+
 """
 
 from collections import Counter, defaultdict
@@ -129,6 +130,10 @@ class InteractionFingerprint:
 
 
 class _LabeledValue:
+    """
+    This class is used to assign additional information to a value in the fingerprint.
+    """
+
     def __init__(self, value, label):
         self.value = value
         self.label = label

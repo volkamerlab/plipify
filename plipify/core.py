@@ -220,6 +220,8 @@ class Structure:
     @classmethod
     def from_pdbfile(cls, path, only_ligands=None, ligand_identifier=None):
         """
+        Read pdb file and then collect and process PLIP data.
+
         Parameters
         ----------
         path : str

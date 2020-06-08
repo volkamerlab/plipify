@@ -1,3 +1,13 @@
+"""
+fp_visual.py
+
+The visualization module for the calculated fingerprints.
+This module takes the fingerprint in dataframe, processes the data further and creates mutliple different visualizations:
+- Interactive stacked bar chart
+- Heatmap
+- Colour coded fingerprint table
+"""
+
 from plip_fingerprints import divide_list, read_residues
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
@@ -19,16 +29,19 @@ interaction_colours = {
 }
 
 
-def fingerprint_barplot(plotdata):
+def fingerprint_barplot(fp_df):
     """
-    Visualize fingerprint as barplot either based on count or fp_type
+    Visualize fingerprint as barplot either based on count or fp_type.
+
+    Parameters
+    ----------
+    fp_data = fingerpint in dataframe form
+
     """
     fig = go.Figure(
         data=[
-            go.Bar(
-                name=interaction, x=list(plotdata.index), y=list(plotdata[interaction])
-            )
-            for interaction in sorted(plotdata.columns, reverse=True)
+            go.Bar(name=interaction, x=list(fp_df.index), y=list(fp_df[interaction]))
+            for interaction in sorted(fp_df.columns, reverse=True)
         ],
     )
     # Change the bar mode
@@ -41,12 +54,17 @@ def fingerprint_barplot(plotdata):
     fig.show()
 
 
-def fingerprint_heatmap(plotdata):
+def fingerprint_heatmap(fp_df):
     """
-    Visualize fingerprint as heatmap either based on count or fp_type
+    Visualize fingerprint as heatmap either based on count or fp_type.
+
+    Parameters
+    ----------
+    fp_df = fingerpint in dataframe form
+    
     """
     fig, ax = plt.subplots(figsize=(10, 7))  # plot size
-    sns.heatmap(plotdata.T, annot=True, cmap="YlGnBu", ax=ax)
+    sns.heatmap(fp_df.T, annot=True, cmap="YlGnBu", ax=ax)
     plt.xlabel("Residues")
     plt.ylabel("Interaction Types")
 
@@ -54,6 +72,12 @@ def fingerprint_heatmap(plotdata):
 def prepare_tabledata(fp_df):
     """
     Create interaction index dictionary for fingerprint table.
+    The keys of this dictionary are the interaction types and the values for each interaction type are a list of the positions (indices) of the fingerprint array that represent this interaction type.
+
+    Parameters
+    ----------
+    fp_df = fingerpint in dataframe form
+    
     """
     residues = list(fp_df.index)
     interaction_types = list(fp_df.columns)
@@ -67,6 +91,12 @@ def prepare_tabledata(fp_df):
 def cell_colour(fp_index, interaction_index):
     """
     Extract cell colour for specific residue interaction.
+
+    Parameters
+    ----------
+    fp_index = the specific fingerprint position for which the colour is extracted
+    interaction_index = dictionary of interaction types and their corresponding indices in the fingerprint
+    
     """
     interaction_type = interaction_index[fp_index]
     interaction_colour = interaction_colours[interaction_type]
@@ -75,7 +105,12 @@ def cell_colour(fp_index, interaction_index):
 
 def fingerprint_table(fp_df):
     """
-    Create HTML and CSS layout for the fingerprint table.
+    Create HTML and CSS table layout for the calculated fingerprint.
+
+    Parameters
+    ----------
+    fp_data = fingerpint in dataframe form
+    
     """
     res_fp, interaction_index, residues = prepare_tabledata(fp_df)
 
