@@ -255,23 +255,25 @@ class Structure:
         for key, site in sorted(pdbcomplex.interaction_sets.items()):
             report = BindingSiteReport(site)
             interactions_by_type = defaultdict(list)
-            for shorthand, InteractionType in cls.INTERACTION_KEYS.items():
-                features = getattr(report, shorthand + "_features")
-                # list of BaseInteraction Subclasses (depending on type)
-                interactions = []
-                for interaction_data in getattr(report, shorthand + "_info"):
-                    interaction_dict = dict(zip(features, interaction_data))
-                    seq_index, chain = (
-                        interaction_dict["RESNR"],
-                        interaction_dict["RESCHAIN"],
-                    )
-                    residue = structure.get_residue_by(seq_index=seq_index, chain=chain)
-                    interaction_obj = InteractionType(interaction=interaction_dict)
-                    interactions.append(interaction_obj)
-                    residue.interactions.append(interaction_obj)
-                interactions_by_type[shorthand].extend(interactions)
-            binding_site = BindingSite(interactions_by_type, name=key)
-            if binding_site.name.startswith("LIG"):
+            if key.startswith("LIG"):
+                for shorthand, InteractionType in cls.INTERACTION_KEYS.items():
+                    features = getattr(report, shorthand + "_features")
+                    # list of BaseInteraction Subclasses (depending on type)
+                    interactions = []
+                    for interaction_data in getattr(report, shorthand + "_info"):
+                        interaction_dict = dict(zip(features, interaction_data))
+                        seq_index, chain = (
+                            interaction_dict["RESNR"],
+                            interaction_dict["RESCHAIN"],
+                        )
+                        residue = structure.get_residue_by(
+                            seq_index=seq_index, chain=chain
+                        )
+                        interaction_obj = InteractionType(interaction=interaction_dict)
+                        interactions.append(interaction_obj)
+                        residue.interactions.append(interaction_obj)
+                    interactions_by_type[shorthand].extend(interactions)
+                binding_site = BindingSite(interactions_by_type, name=key)
                 binding_sites.append(binding_site)
 
         structure.binding_sites = binding_sites
