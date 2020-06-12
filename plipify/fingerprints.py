@@ -50,6 +50,17 @@ class InteractionFingerprint:
         as_dataframe=False,
         remove_non_interacting_residues=False,
     ):
+        """
+        Calulative interaction fingerprint for one or multiple strcutures.
+
+        Parameters
+        ----------
+        labeled = boolean deciding whether to make each fingerprint bit a labeled value or simple integer
+        cumulative = defines if the fp is a summed up fp or multiple structures
+        as_dataframe = if true return fp as data_frame, else as array
+        remove_non_interacting_residues = if true, remove all fp bits that belong to residues for which there are no interactions
+        """
+
         # TODO: Some boolean paths are not covered here! Provide errors or implement missing path.
         fingerprints = []
         for structure in self.structures:
@@ -81,6 +92,13 @@ class InteractionFingerprint:
                     return df
 
     def _acumulate_fingerprints(self, fingerprints):
+        """
+        Calculate the cumulative fingerprint from fingerprints of multiple structures.
+
+        Parameters
+        ----------
+        fingerprints = list of fingperprints to sum up
+        """
         summed_fp = []
         # Iterate over the positions in the finger print
         # [ 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 ]
@@ -108,6 +126,14 @@ class InteractionFingerprint:
         return summed_fp
 
     def _calculate_fingerprint_one_structure(self, structure, labeled=False):
+        """
+        Calculate the interaction fingerprint for a single structure.
+
+        Parameters
+        ----------
+        structure = structure object based on pdb file
+        labeled = boolean deciding whether to make each fingerprint bit a labeled value or simple integer
+        """
         fp_length = len(self.residue_indices) * len(self.interaction_types)
         fingerprint = []
         for index in self.residue_indices:

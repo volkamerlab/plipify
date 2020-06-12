@@ -228,6 +228,8 @@ class Structure:
             Path to an existing PDB file
         only_ligands : list of str
             Ligand names to characterize. Other ligands will be ignored.
+        ligand_identifier : str
+            A String that the binding site names start with, when they are ligand binding sites. If filled, only binding sites with this identifier will be considered.
         """
         pdbcomplex = PDBComplex()
         pdbcomplex.load_pdb(path)
