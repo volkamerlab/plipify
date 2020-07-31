@@ -15,8 +15,8 @@ Namely:
 
 from collections import defaultdict
 
-from plip.modules.preparation import PDBComplex
-from plip.modules.report import BindingSiteReport
+from plip.structure.preparation import PDBComplex
+from plip.exchange.report import BindingSiteReport
 
 
 ###

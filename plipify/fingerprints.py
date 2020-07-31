@@ -8,7 +8,7 @@ an interaction fingerprint
 
 from collections import Counter
 
-from core import Structure
+from .core import Structure
 
 
 class BaseFingerprint:

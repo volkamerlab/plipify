@@ -2,25 +2,18 @@ name: test
 channels:
   - conda-forge
   - defaults
-  - openbabel
 dependencies:
   # Base depends
-  - python 2.7
+  - python
   - pip
   - pandas
   - tqdm
-  - openbabel 2.4.1
   - numpy
-  - lxml
-  - future
-  - jupyter
-  - notebook
+  - jupyterlab
   - nglview
+  - plip
+  - matplotlib-base
+  - seaborn
     # Testing
   - pytest
   - pytest-cov
-
-  # Pip-only installs
-  - pip:
-    # needs to be installed manually with --no-deps
-    # - https://github.com/ssalentin/plip/archive/8c36e35fb7f44992a14db4f3626316892a77e81f.zip
