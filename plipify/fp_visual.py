@@ -8,7 +8,6 @@ This module takes the fingerprint in dataframe, processes the data further and c
 - Colour coded fingerprint table
 """
 
-from plip_fingerprints import divide_list, read_residues
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import seaborn as sns
@@ -16,6 +15,8 @@ import pandas as pd
 from IPython.core.display import display, HTML
 import ipywidgets as widgets
 from ipywidgets import HBox
+
+from .plip_fingerprints import divide_list, read_residues
 
 interaction_colours = {
     "hydrophobic": "#33ccff",
@@ -61,7 +62,7 @@ def fingerprint_heatmap(fp_df):
     Parameters
     ----------
     fp_df = fingerpint in dataframe form
-    
+
     """
     fig, ax = plt.subplots(figsize=(10, 7))  # plot size
     sns.heatmap(fp_df.T, annot=True, cmap="YlGnBu", ax=ax)
@@ -77,7 +78,7 @@ def prepare_tabledata(fp_df):
     Parameters
     ----------
     fp_df = fingerpint in dataframe form
-    
+
     """
     residues = list(fp_df.index)
     interaction_types = list(fp_df.columns)
@@ -96,7 +97,7 @@ def cell_colour(fp_index, interaction_index):
     ----------
     fp_index = the specific fingerprint position for which the colour is extracted
     interaction_index = dictionary of interaction types and their corresponding indices in the fingerprint
-    
+
     """
     interaction_type = interaction_index[fp_index]
     interaction_colour = interaction_colours[interaction_type]
@@ -110,13 +111,11 @@ def fingerprint_table(fp_df):
     Parameters
     ----------
     fp_data = fingerpint in dataframe form
-    
+
     """
     res_fp, interaction_index, residues = prepare_tabledata(fp_df)
 
-    html_legend = (
-        "<h3>Interactions in pre-defined binding site residues</h3><table><tr>"
-    )
+    html_legend = "<h3>Interactions in pre-defined binding site residues</h3><table><tr>"
     for key in interaction_colours:
         html_legend = (
             html_legend
@@ -188,16 +187,12 @@ def fingerprint_table(fp_df):
 
     fp_index = 0
     for res in res_fp:
-        html_str = (
-            html_str + '<td style="border:1px solid;border-color:#9698ed;"><table><tr>'
-        )
+        html_str = html_str + '<td style="border:1px solid;border-color:#9698ed;"><table><tr>'
         for i in res:
             if i == 0:
                 html_str = html_str + '<td style="background-color:#ffffff"></td>'
             else:
-                interaction_colour, interaction_type = cell_colour(
-                    fp_index, interaction_index
-                )
+                interaction_colour, interaction_type = cell_colour(fp_index, interaction_index)
                 html_str = (
                     html_str
                     + '<td style="color:#fff; font-weight:bold; background-color:'

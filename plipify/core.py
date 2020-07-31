@@ -13,8 +13,7 @@ Namely:
 - Dataset, a collection of structures
 """
 
-from collections import defaultdict
-from collections import Counter
+from collections import defaultdict, Counter
 
 from plip.structure.preparation import PDBComplex
 from plip.exchange.report import BindingSiteReport
@@ -175,13 +174,7 @@ class BindingSite:
     def __repr__(self):
         return "<BindingSite with name='{}' and {} interactions>".format(
             self.name,
-            len(
-                [
-                    interaction
-                    for interaction in self.interactions.values()
-                    if interaction
-                ]
-            ),
+            len([interaction for interaction in self.interactions.values() if interaction]),
         )
 
 
@@ -240,10 +233,7 @@ class Structure:
         residues = []
         for r in pdbcomplex.resis:
             residue = ProteinResidue(
-                name=r.GetName(),
-                seq_index=r.GetNum(),
-                chain=r.GetChain(),
-                structure=structure,
+                name=r.GetName(), seq_index=r.GetNum(), chain=r.GetChain(), structure=structure,
             )
             residues.append(residue)
 
@@ -270,9 +260,7 @@ class Structure:
                             interaction_dict["RESNR"],
                             interaction_dict["RESCHAIN"],
                         )
-                        residue = structure.get_residue_by(
-                            seq_index=seq_index, chain=chain
-                        )
+                        residue = structure.get_residue_by(seq_index=seq_index, chain=chain)
                         interaction_obj = InteractionType(interaction=interaction_dict)
                         interactions.append(interaction_obj)
                         residue.interactions.append(interaction_obj)
@@ -303,16 +291,12 @@ class Structure:
         if seq_index is not None:
             for residue in self.residues:
                 if residue.seq_index == seq_index:
-                    if (
-                        chain is None
-                    ):  # TODO: Check there are no other residues with same index!
+                    if chain is None:  # TODO: Check there are no other residues with same index!
                         break
                     elif residue.chain == chain:
                         break
             else:  # break not reached!
                 raise ValueError(
-                    "No residue with such sequence index: {}, {}!".format(
-                        seq_index, chain
-                    )
+                    "No residue with such sequence index: {}, {}!".format(seq_index, chain)
                 )
             return residue

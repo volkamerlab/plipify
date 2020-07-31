@@ -10,7 +10,7 @@ an interaction fingerprint.
 from collections import Counter, defaultdict
 import numpy as np
 import pandas as pd
-from core import Structure, ProteinResidue
+from .core import Structure, ProteinResidue
 
 
 class InteractionFingerprint:
