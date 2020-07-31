@@ -16,6 +16,10 @@ dependencies:
   - jupyter
   - notebook
   - nglview
+  - matplotlib
+  - plotly
+  - seaborn
+  - ipywidgets
     # Testing
   - pytest
   - pytest-cov
