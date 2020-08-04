@@ -1,9 +1,9 @@
 import csv
 import os
 import pandas as pd
-from tqdm.notebook import tqdm
-from plip.modules.preparation import PDBComplex
-from plip.modules.report import BindingSiteReport
+from tqdm.auto import tqdm
+from plip.structure.preparation import PDBComplex
+from plip.exchange.report import BindingSiteReport
 from IPython.display import display, Markdown
 
 ##### PREPARATION ######
@@ -26,8 +26,8 @@ def read_residues(path):
     """
     with open(path) as file:
         residue_reader = csv.reader(file, delimiter=",")
-        residues = residue_reader.next()
-    residues = map(int, residues)
+        residues = next(residue_reader)
+    residues = list(map(int, residues))
     return residues
 
 

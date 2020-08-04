@@ -7,10 +7,10 @@ an interaction fingerprint.
 
 """
 
-from collections import Counter, defaultdict
+from collections import defaultdict
 import numpy as np
 import pandas as pd
-from core import Structure, ProteinResidue
+from .core import ProteinResidue
 
 
 class InteractionFingerprint:
@@ -64,9 +64,7 @@ class InteractionFingerprint:
         # TODO: Some boolean paths are not covered here! Provide errors or implement missing path.
         fingerprints = []
         for structure in self.structures:
-            fingerprint = self._calculate_fingerprint_one_structure(
-                structure, labeled=labeled
-            )
+            fingerprint = self._calculate_fingerprint_one_structure(structure, labeled=labeled)
             fingerprints.append(fingerprint)
 
         if cumulative:
@@ -107,10 +105,8 @@ class InteractionFingerprint:
         # [ 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 ]
         #   ^ -->
         for position in zip(*fingerprints):
-            total = sum(
-                [getattr(structure, "value", structure) for structure in position]
-            )
-            if hasattr(position[0], "label"):  #  this is the labeled fingerprint!
+            total = sum([getattr(structure, "value", structure) for structure in position])
+            if hasattr(position[0], "label"):  # this is the labeled fingerprint!
                 labels = [structure.label for structure in position]
                 # Check all residues are equivalent!
                 for attr in ("name", "seq_index", "chain"):

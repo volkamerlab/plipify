@@ -7,9 +7,9 @@ on:
   pull_request:
     branches:
       - "master"
-  schedule:
-    # Nightly Tests
-    - cron: "0 0 * * *"
+  # schedule:
+  #   # Nightly Tests
+  #   - cron: "0 0 * * *"
 
 jobs:
   test:
@@ -17,8 +17,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macOS-latest, ubuntu-latest] # , windows-latest]
-        python-version: [2.7]
+        os: [ubuntu-latest] # , macOS-latest, windows-latest]
+        python-version: [3.7, 3.8]
     env:
       PYVER: ${{ matrix.python-version }}
       CI_OS: ${{ matrix.os }}
@@ -49,7 +49,6 @@ jobs:
           conda info
           python devtools/scripts/create_conda_env.py -n=test -p=$PYVER devtools/conda-envs/test_env.yaml
           conda activate test
-          python -m pip install --no-deps https://github.com/ssalentin/plip/archive/8c36e35fb7f44992a14db4f3626316892a77e81f.zip
 
       - name: Install package
         shell: bash
