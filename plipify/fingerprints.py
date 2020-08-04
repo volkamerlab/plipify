@@ -7,10 +7,10 @@ an interaction fingerprint.
 
 """
 
-from collections import Counter, defaultdict
+from collections import defaultdict
 import numpy as np
 import pandas as pd
-from .core import Structure, ProteinResidue
+from .core import ProteinResidue
 
 
 class InteractionFingerprint:
@@ -106,7 +106,7 @@ class InteractionFingerprint:
         #   ^ -->
         for position in zip(*fingerprints):
             total = sum([getattr(structure, "value", structure) for structure in position])
-            if hasattr(position[0], "label"):  #  this is the labeled fingerprint!
+            if hasattr(position[0], "label"):  # this is the labeled fingerprint!
                 labels = [structure.label for structure in position]
                 # Check all residues are equivalent!
                 for attr in ("name", "seq_index", "chain"):

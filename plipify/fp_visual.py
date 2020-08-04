@@ -11,12 +11,8 @@ This module takes the fingerprint in dataframe, processes the data further and c
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import seaborn as sns
-import pandas as pd
 from IPython.core.display import display, HTML
-import ipywidgets as widgets
-from ipywidgets import HBox
 
-from .plip_fingerprints import divide_list, read_residues
 
 interaction_colours = {
     "hydrophobic": "#33ccff",
