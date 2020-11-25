@@ -104,3 +104,6 @@ ENV/
 
 # IDEs
 .vscode/
+
+projects/*/data
+projects/*/output

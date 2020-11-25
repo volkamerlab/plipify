@@ -26,7 +26,6 @@ class InteractionFingerprint:
 
     def __init__(
         self,
-        structures,
         residue_indices,
         interaction_types=(
             "hydrophobic",
@@ -39,12 +38,12 @@ class InteractionFingerprint:
             "metal",
         ),
     ):
-        self.structures = structures
         self.residue_indices = residue_indices
         self.interaction_types = interaction_types
 
     def calculate_fingerprint(
         self,
+        structures,
         labeled=True,
         cumulative=True,
         as_dataframe=False,
@@ -55,6 +54,7 @@ class InteractionFingerprint:
 
         Parameters
         ----------
+        structures = list of core.Structure objects
         labeled = boolean deciding whether to make each fingerprint bit a labeled value or simple integer
         cumulative = defines if the fp is a summed up fp or multiple structures
         as_dataframe = if true return fp as data_frame, else as array
@@ -63,9 +63,11 @@ class InteractionFingerprint:
 
         # TODO: Some boolean paths are not covered here! Provide errors or implement missing path.
         fingerprints = []
-        for structure in self.structures:
-            fingerprint = self._calculate_fingerprint_one_structure(structure, labeled=labeled)
-            fingerprints.append(fingerprint)
+        for structure in structures:
+            try:
+                fingerprints.append(self._calculate_fingerprint_one_structure(structure, labeled=labeled))
+            except Exception as e:
+                print("! Warning, could not process structure", structure, "due to error", type(e).__name__, e)
 
         if cumulative:
             cumul_fp = self._acumulate_fingerprints(fingerprints)
@@ -88,6 +90,8 @@ class InteractionFingerprint:
                     return df.T
                 else:
                     return df
+
+        return fingerprints
 
     def _acumulate_fingerprints(self, fingerprints):
         """

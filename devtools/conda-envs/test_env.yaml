@@ -12,6 +12,7 @@ dependencies:
   - jupyterlab
   - nglview
   - plip
+  - rdkit
   - matplotlib-base
   - seaborn
   - plotly
