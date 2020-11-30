@@ -1,5 +1,5 @@
 """
-fp_visual.py
+visualization.py
 
 The visualization module for the calculated fingerprints.
 This module takes the fingerprint in dataframe, processes the data further and creates mutliple different visualizations:
@@ -11,7 +11,6 @@ This module takes the fingerprint in dataframe, processes the data further and c
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import seaborn as sns
-from IPython.core.display import display, HTML
 
 
 interaction_colours = {
@@ -26,7 +25,7 @@ interaction_colours = {
 }
 
 
-def fingerprint_barplot(fp_df):
+def fingerprint_barplot(fingerprint_df):
     """
     Visualize fingerprint as barplot either based on count or fp_type.
 
@@ -37,8 +36,10 @@ def fingerprint_barplot(fp_df):
     """
     fig = go.Figure(
         data=[
-            go.Bar(name=interaction, x=list(fp_df.index), y=list(fp_df[interaction]))
-            for interaction in sorted(fp_df.columns, reverse=True)
+            go.Bar(
+                name=interaction, x=list(fingerprint_df.index), y=list(fingerprint_df[interaction])
+            )
+            for interaction in sorted(fingerprint_df.columns, reverse=True)
         ],
     )
     # Change the bar mode
@@ -48,37 +49,38 @@ def fingerprint_barplot(fp_df):
         yaxis_title="Interactions",
         xaxis_title="Residues",
     )
-    fig.show()
+    return fig
 
 
-def fingerprint_heatmap(fp_df):
+def fingerprint_heatmap(fingerprint_df):
     """
     Visualize fingerprint as heatmap either based on count or fp_type.
 
     Parameters
     ----------
-    fp_df = fingerpint in dataframe form
+    fingerprint_df = fingerpint in dataframe form
 
     """
     fig, ax = plt.subplots(figsize=(10, 7))  # plot size
-    sns.heatmap(fp_df.T, annot=True, cmap="YlGnBu", ax=ax)
-    plt.xlabel("Residues")
-    plt.ylabel("Interaction Types")
+    sns.heatmap(fingerprint_df.T, annot=True, cmap="YlGnBu", ax=ax)
+    ax.set_xlabel("Residues")
+    ax.set_ylabel("Interaction Types")
+    return fig
 
 
-def prepare_tabledata(fp_df):
+def prepare_tabledata(fingerprint_df):
     """
     Create interaction index dictionary for fingerprint table.
     The keys of this dictionary are the interaction types and the values for each interaction type are a list of the positions (indices) of the fingerprint array that represent this interaction type.
 
     Parameters
     ----------
-    fp_df = fingerpint in dataframe form
+    fingerprint_df = fingerpint in dataframe form
 
     """
-    residues = list(fp_df.index)
-    interaction_types = list(fp_df.columns)
-    res_fp = fp_df.values.tolist()
+    residues = list(fingerprint_df.index)
+    interaction_types = list(fingerprint_df.columns)
+    res_fp = fingerprint_df.values.tolist()
     fp_id = range(0, len(residues) * len(interaction_types))  # all fp indices
     interaction_list = interaction_types * len(residues)
     interaction_index = dict(zip(fp_id, interaction_list))
@@ -100,16 +102,16 @@ def cell_colour(fp_index, interaction_index):
     return interaction_colour, interaction_type
 
 
-def fingerprint_table(fp_df):
+def fingerprint_table(fingerprint_df, as_widget=True):
     """
     Create HTML and CSS table layout for the calculated fingerprint.
 
     Parameters
     ----------
     fp_data = fingerpint in dataframe form
-
+    as_widget = whether to build a IPyWidget object or just return the HTML string
     """
-    res_fp, interaction_index, residues = prepare_tabledata(fp_df)
+    res_fp, interaction_index, residues = prepare_tabledata(fingerprint_df)
 
     html_legend = "<h3>Interactions in pre-defined binding site residues</h3><table><tr>"
     for key in interaction_colours:
@@ -203,5 +205,9 @@ def fingerprint_table(fp_df):
         html_str = html_str + "</tr></table></td>"
 
     html_str = html_str + "</tr></table></html>"
-    display(HTML(html_legend))
-    display(HTML(html_str))
+
+    if as_widget:
+        from ipywidgets import VBox, HTML
+
+        return VBox([HTML(html_legend), HTML(html_str)])
+    return html_legend, html_str
