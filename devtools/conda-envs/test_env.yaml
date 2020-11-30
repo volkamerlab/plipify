@@ -4,7 +4,7 @@ channels:
   - defaults
 dependencies:
   # Base depends
-  - python
+  - python < 3.9
   - pip
   - pandas
   - tqdm
@@ -17,6 +17,12 @@ dependencies:
   - seaborn
   - plotly
   - ipywidgets
+  - xlrd
     # Testing
   - pytest
   - pytest-cov
+  # Dev
+  - black
+
+## For nglview and other widgets, run:
+# jupyter labextension install @jupyter-widgets/jupyterlab-manager nglview-js-widgets @jupyterlab/toc plotlywidget jupyterlab-plotly
