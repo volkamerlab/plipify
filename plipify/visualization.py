@@ -13,9 +13,9 @@ import plotly.graph_objects as go
 import seaborn as sns
 
 
-interaction_colours = {
-    "hydrophobic": "#33ccff",
-    "hbond": "#ff6699",
+INTERACTION_PALETTE = {
+    "hbond": "#33ccff",
+    "hydrophobic": "#ff6699",
     "waterbridge": "#4d4dff",
     "saltbridge": "#ff3300",
     "pistacking": "#00cc7a",
@@ -68,7 +68,7 @@ def fingerprint_heatmap(fingerprint_df):
     return fig
 
 
-def prepare_tabledata(fingerprint_df):
+def _prepare_tabledata(fingerprint_df):
     """
     Create interaction index dictionary for fingerprint table.
     The keys of this dictionary are the interaction types and the values for each interaction type are a list of the positions (indices) of the fingerprint array that represent this interaction type.
@@ -77,29 +77,83 @@ def prepare_tabledata(fingerprint_df):
     ----------
     fingerprint_df = fingerpint in dataframe form
 
+    Returns
+    -------
+    fingerprint : list of int
+    interaction_index : dict[int, str]
+        Maps position in a fingerprint to the interaction type
+    residues : list of str
+        List of residue string representations
     """
     residues = list(fingerprint_df.index)
     interaction_types = list(fingerprint_df.columns)
-    res_fp = fingerprint_df.values.tolist()
+    fingerprint = fingerprint_df.values.tolist()
     fp_id = range(0, len(residues) * len(interaction_types))  # all fp indices
     interaction_list = interaction_types * len(residues)
     interaction_index = dict(zip(fp_id, interaction_list))
-    return res_fp, interaction_index, residues
+    return fingerprint, interaction_index, residues
 
 
-def cell_colour(fp_index, interaction_index):
+_TABLE_CSS = """
+    table.plipify-legend {
+        text-align: center;
+        color: #fff;
+    }
+
+    table.plipify-legend td {
+        padding: 3px;
+    }
+    table.plipify-interactions {
+        border: 1px solid #9698ed;
+        text-align: center;
+        color: #fff;
+        font-weight: bold;
+    }
+
+    table.plipify-interactions th {
+        background-color: #9698ed;
+        padding: 3px;
+    }
+
+    .plipify-ttooltip {
+        position: relative;
+        display: inline-block;
+    }
+
+    .plipify-ttooltip .plipify-ttooltiptext {
+        visibility: hidden;
+        width: 120px;
+        background-color: #000000;
+        color: #fff;
+        text-align: center;
+        padding: 5px 0;
+        border-radius: 5px;
+
+        position: absolute;
+        z-index: 1;
+        top: -5px;
+        left: 105%;
+
+        opacity: 0.3;
+        transition: opacity 0.3s;
+    }
+
+    .plipify-ttooltip .plipify-ttooltiptext::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border: 5px solid;
+    }
+
+
+    .plipify-ttooltip:hover .plipify-ttooltiptext {
+        visibility: visible;
+        opacity: 0.7;
+    }
+
     """
-    Extract cell colour for specific residue interaction.
-
-    Parameters
-    ----------
-    fp_index = the specific fingerprint position for which the colour is extracted
-    interaction_index = dictionary of interaction types and their corresponding indices in the fingerprint
-
-    """
-    interaction_type = interaction_index[fp_index]
-    interaction_colour = interaction_colours[interaction_type]
-    return interaction_colour, interaction_type
 
 
 def fingerprint_table(fingerprint_df, as_widget=True):
@@ -111,103 +165,64 @@ def fingerprint_table(fingerprint_df, as_widget=True):
     fp_data = fingerpint in dataframe form
     as_widget = whether to build a IPyWidget object or just return the HTML string
     """
-    res_fp, interaction_index, residues = prepare_tabledata(fingerprint_df)
+    fingerprint, interaction_index, residues = _prepare_tabledata(fingerprint_df)
 
-    html_legend = "<h3>Interactions in pre-defined binding site residues</h3><table><tr>"
-    for key in interaction_colours:
-        html_legend = (
-            html_legend
-            + '<td style="color:#fff; font-weight:bold; background-color:'
-            + interaction_colours[key]
-            + ';text-align:center">'
-            + key
-            + "</td>"
-        )
-    html_legend = html_legend + "</tr></table>"
-
-    html_str = """<html>
+    html = f"""
     <style>
-    .ttooltip {
-    position: relative;
-    display: inline-block;
-    }
-
-    .ttooltip .ttooltiptext {
-    visibility: hidden;
-    width: 120px;
-    background-color: #000000;
-    color: #fff;
-    text-align: center;
-    padding: 5px 0;
-    border-radius: 6px;
-
-    position: absolute;
-    z-index: 1;
-    top: -5px;
-    left: 105%;
-
-    opacity: 0.3;
-    transition: opacity 0.3s;
-    }
-
-    .ttooltip .ttooltiptext::after {
-    content: "";
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    margin-left: -5px;
-    border-width: 5px;
-    border-style: solid;
-    border-color:
-    }
-
-
-    .ttooltip:hover .ttooltiptext {
-    visibility: visible;
-    opacity: 0.7;
-    }
-    table{
-        max-width: 600px;
-    }
+    {_TABLE_CSS}
     </style>
+    <h3>Interactions in pre-defined binding site residues</h3>
+    <table class="plipify-legend">
+        <tr>
+    """
+    for key in INTERACTION_PALETTE:
+        html += f'<td style="background-color:{INTERACTION_PALETTE[key]}">{key}</td>'
+
+    html += """
+        </tr>
+    </table>
+
+    <table class="plipify-interactions">
+        <tr>
     """
 
-    html_str = html_str + '<table style="border:1px solid;border-color:#9698ed"><tr>'
-    for res in residues:
-        html_str = (
-            html_str
-            + '<th style="color:#fff;border:1px solid;border-color:#9698ed;background-color:#9698ed; text-align:center">'
-            + str(res)
-            + "</th>"
-        )
-
-    html_str = html_str + "</tr><tr>"
+    for residue in residues:
+        html += f"<th>{residue}</th>"
+    html += "</tr><tr>"
 
     fp_index = 0
-    for res in res_fp:
-        html_str = html_str + '<td style="border:1px solid;border-color:#9698ed;"><table><tr>'
-        for i in res:
-            if i == 0:
-                html_str = html_str + '<td style="background-color:#ffffff"></td>'
+    for residue_fp in fingerprint:
+        html += """<td>
+            <table>
+                <tr>
+        """
+        for bit in residue_fp:
+            if bit == 0:  # no interactions reported at this position
+                html += "<td></td>"
             else:
-                interaction_colour, interaction_type = cell_colour(fp_index, interaction_index)
-                html_str = (
-                    html_str
-                    + '<td style="color:#fff; font-weight:bold; background-color:'
-                    + interaction_colour
-                    + '"><div class="ttooltip">'
-                    + str(i)
-                    + '<span class="ttooltiptext">'
-                    + interaction_type
-                    + "</span></div></td>"
-                )
+                interaction_type = interaction_index[fp_index]
+                interaction_colour = INTERACTION_PALETTE[interaction_type]
+                html += f"""
+                    <td style="background-color: {interaction_colour}">
+                        <div class="plipify-ttooltip">{bit}
+                            <span class="plipify-ttooltiptext">{interaction_type}</span>
+                        </div>
+                    </td>
+                    """
             fp_index += 1
-        html_str = html_str + "</tr></table></td>"
+        html += """
+                </tr>
+            </table>
+        </td>
+        """
 
-    html_str = html_str + "</tr></table></html>"
+    html += """
+        </tr>
+    </table>
+    """
 
     if as_widget:
-        from ipywidgets import VBox, HTML
+        from ipywidgets import HTML
 
-        return VBox([HTML(html_legend), HTML(html_str)])
-    return html_legend, html_str
+        return HTML(html)
+    return html
