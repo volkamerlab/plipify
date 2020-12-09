@@ -15,7 +15,8 @@ import seaborn as sns
 
 
 INTERACTION_PALETTE = {
-    "hbond": "#33ccff",
+    "hbond-don": "#22bbff",
+    "hbond-acc": "#33ccff",
     "hydrophobic": "#ff6699",
     "waterbridge": "#4d4dff",
     "saltbridge": "#ff3300",

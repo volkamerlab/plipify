@@ -29,7 +29,8 @@ class InteractionFingerprint:
         residue_indices,
         interaction_types=(
             "hydrophobic",
-            "hbond",
+            "hbond-don",
+            "hbond-acc",
             "waterbridge",
             "saltbridge",
             "pistacking",
@@ -65,9 +66,17 @@ class InteractionFingerprint:
         fingerprints = []
         for structure in structures:
             try:
-                fingerprints.append(self._calculate_fingerprint_one_structure(structure, labeled=labeled))
+                fingerprints.append(
+                    self._calculate_fingerprint_one_structure(structure, labeled=labeled)
+                )
             except Exception as e:
-                print("! Warning, could not process structure", structure, "due to error", type(e).__name__, e)
+                print(
+                    "! Warning, could not process structure",
+                    structure,
+                    "due to error",
+                    type(e).__name__,
+                    e,
+                )
 
         if cumulative:
             cumul_fp = self._acumulate_fingerprints(fingerprints)
@@ -77,7 +86,7 @@ class InteractionFingerprint:
                     plotdata[entry.label["type"]].append(entry)
                 labels = [
                     labeled_value.label["residue"].identifier
-                    for labeled_value in plotdata["hbond"]
+                    for labeled_value in plotdata["hydrophobic"]
                 ]
                 df = pd.DataFrame.from_dict(
                     {k: [x.value for x in v] for (k, v) in plotdata.items()}

@@ -36,6 +36,8 @@ class BaseInteraction:
         but hydrophobic are not aware of such a concept.
     """
 
+    shorthand = ""
+
     def __init__(self, interaction):
         self.interaction = interaction
 
@@ -48,11 +50,31 @@ class HydrophobicInteraction(BaseInteraction):
     HydrophobicInteraction, a subclass of BaseInteraction
     """
 
+    shorthand = "hydrophobic"
+
 
 class HbondInteraction(BaseInteraction):
     """
     HbondInteraction, a subclass of BaseInteraction
     """
+
+    shorthand = "hbond"
+
+
+class HbondDonorInteraction(HbondInteraction):
+    """
+    HbondInteraction, a subclass of BaseInteraction
+    """
+
+    shorthand = "hbond-don"
+
+
+class HbondAcceptorInteraction(HbondInteraction):
+    """
+    HbondInteraction, a subclass of BaseInteraction
+    """
+
+    shorthand = "hbond-acc"
 
 
 class WaterbridgeInteraction(BaseInteraction):
@@ -60,11 +82,15 @@ class WaterbridgeInteraction(BaseInteraction):
     WaterbridgeInteraction, a subclass of BaseInteraction
     """
 
+    shorthand = "waterbridge"
+
 
 class SaltbridgeInteraction(BaseInteraction):
     """
     SaltbridgeInteraction, a subclass of BaseInteraction
     """
+
+    shorthand = "saltbridge"
 
 
 class PistackingInteraction(BaseInteraction):
@@ -72,11 +98,15 @@ class PistackingInteraction(BaseInteraction):
     PistackingInteraction, a subclass of BaseInteraction
     """
 
+    shorthand = "pistacking"
+
 
 class PicationInteraction(BaseInteraction):
     """
     PicationInteraction, a subclass of BaseInteraction
     """
+
+    shorthand = "pication"
 
 
 class HalogenInteraction(BaseInteraction):
@@ -84,11 +114,15 @@ class HalogenInteraction(BaseInteraction):
     HalogenInteraction, a subclass of BaseInteraction
     """
 
+    shorthand = "halogen"
+
 
 class MetalInteraction(BaseInteraction):
     """
     MetalInteraction, a subclass of BaseInteraction
     """
+
+    shorthand = "metal"
 
 
 ###
@@ -134,10 +168,7 @@ class ProteinResidue(BaseResidue):
         self.structure = structure
 
     def count_interactions(self):
-        class_to_key = {v: k for (k, v) in Structure.INTERACTION_KEYS.items()}
-        interaction_types = [
-            class_to_key[interaction.__class__] for interaction in self.interactions
-        ]
+        interaction_types = [interaction.shorthand for interaction in self.interactions]
         counter = Counter(interaction_types)
         return counter
 
@@ -193,16 +224,16 @@ class Structure:
 
     """
 
-    INTERACTION_KEYS = {
-        "hydrophobic": HydrophobicInteraction,
-        "hbond": HbondInteraction,
-        "waterbridge": WaterbridgeInteraction,
-        "saltbridge": SaltbridgeInteraction,
-        "pistacking": PistackingInteraction,
-        "pication": PicationInteraction,
-        "halogen": HalogenInteraction,
-        "metal": MetalInteraction,
-    }
+    INTERACTIONS = (
+        HydrophobicInteraction,
+        HbondInteraction,
+        WaterbridgeInteraction,
+        SaltbridgeInteraction,
+        PistackingInteraction,
+        PicationInteraction,
+        HalogenInteraction,
+        MetalInteraction,
+    )
 
     def __init__(self, residues=None, ligands=None, binding_sites=None):
         self.residues = residues
@@ -222,7 +253,8 @@ class Structure:
         only_ligands : list of str
             Ligand names to characterize. Other ligands will be ignored.
         ligand_identifier : str
-            A String that the binding site names start with, when they are ligand binding sites. If filled, only binding sites with this identifier will be considered.
+            A String that the binding site names start with, when they are ligand binding sites.
+            If filled, only binding sites with this identifier will be considered.
         """
         pdbcomplex = PDBComplex()
         pdbcomplex.load_pdb(path)
@@ -233,7 +265,10 @@ class Structure:
         residues = []
         for r in pdbcomplex.resis:
             residue = ProteinResidue(
-                name=r.GetName(), seq_index=r.GetNum(), chain=r.GetChain(), structure=structure,
+                name=r.GetName(),
+                seq_index=r.GetNum(),
+                chain=r.GetChain(),
+                structure=structure,
             )
             residues.append(residue)
 
@@ -248,12 +283,16 @@ class Structure:
         binding_sites = []
         for key, site in sorted(pdbcomplex.interaction_sets.items()):
             report = BindingSiteReport(site)
-            interactions_by_type = defaultdict(list)
+            interactions = []
             if ligand_identifier is None or key.startswith(ligand_identifier):
-                for shorthand, InteractionType in cls.INTERACTION_KEYS.items():
+                for InteractionType in cls.INTERACTIONS:
+                    shorthand = InteractionType.shorthand
+                    if shorthand == "hbond-acc":
+                        shorthand == "hbond"
+                    elif shorthand == "hbond-don":
+                        continue  # skip, we processed it already
                     features = getattr(report, shorthand + "_features")
                     # list of BaseInteraction Subclasses (depending on type)
-                    interactions = []
                     for interaction_data in getattr(report, shorthand + "_info"):
                         interaction_dict = dict(zip(features, interaction_data))
                         seq_index, chain = (
@@ -261,10 +300,24 @@ class Structure:
                             interaction_dict["RESCHAIN"],
                         )
                         residue = structure.get_residue_by(seq_index=seq_index, chain=chain)
-                        interaction_obj = InteractionType(interaction=interaction_dict)
+                        if shorthand == "hbond":
+                            if interaction_dict["PROTISDON"]:
+                                interaction_obj = HbondDonorInteraction(
+                                    interaction=interaction_dict
+                                )
+                            else:
+                                interaction_obj = HbondAcceptorInteraction(
+                                    interaction=interaction_dict
+                                )
+                        else:
+                            interaction_obj = InteractionType(interaction=interaction_dict)
                         interactions.append(interaction_obj)
                         residue.interactions.append(interaction_obj)
-                    interactions_by_type[shorthand].extend(interactions)
+
+                interactions_by_type = defaultdict(list)
+                for i in interactions:
+                    interactions_by_type[i.shorthand].append(i)
+
                 binding_site = BindingSite(interactions_by_type, name=key)
                 binding_sites.append(binding_site)
 
