@@ -1,6 +1,7 @@
 name: test
 channels:
   - conda-forge
+  - bioconda
   - defaults
 dependencies:
   # Base depends
@@ -18,11 +19,18 @@ dependencies:
   - plotly
   - ipywidgets
   - xlrd
-    # Testing
+  # opencadd
+  - MDAnalysis
+  - nglview
+  - bravado
+  - biopandas
+  - biotite 
+  # Testing
   - pytest
   - pytest-cov
   # Dev
   - black
-
+  - pip:
+    - https://github.com/volkamerlab/opencadd/archive/master.tar.gz
 ## For nglview and other widgets, run:
 # jupyter labextension install @jupyter-widgets/jupyterlab-manager nglview-js-widgets @jupyterlab/toc plotlywidget jupyterlab-plotly
