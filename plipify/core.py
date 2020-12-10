@@ -236,9 +236,9 @@ class Structure:
     )
 
     def __init__(self, residues=None, ligands=None, binding_sites=None):
-        self.residues = residues
-        self.ligands = ligands
-        self.binding_sites = binding_sites
+        self.residues = residues or []
+        self.ligands = ligands or []
+        self.binding_sites = binding_sites or []
         self._path = None
 
     @classmethod
@@ -353,3 +353,13 @@ class Structure:
                     "No residue with such sequence index: {}, {}!".format(seq_index, chain)
                 )
             return residue
+
+    def __repr__(self):
+        s = (
+            f"<{self.__class__.__name__} with {len(self.residues)} residues, "
+            f"{len(self.ligands)} ligands "
+            f"and {len(self.binding_sites)} binding sites"
+        )
+        if self._path:
+            s += f" (loaded from file `{self._path}`)"
+        return s + ">"

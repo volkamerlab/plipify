@@ -49,17 +49,30 @@ class InteractionFingerprint:
         cumulative=True,
         as_dataframe=False,
         remove_non_interacting_residues=False,
+        remove_empty_interaction_types=False,
+        ensure_same_sequence=True,
     ):
         """
         Calulative interaction fingerprint for one or multiple strcutures.
 
         Parameters
         ----------
-        structures = list of core.Structure objects
-        labeled = boolean deciding whether to make each fingerprint bit a labeled value or simple integer
-        cumulative = defines if the fp is a summed up fp or multiple structures
-        as_dataframe = if true return fp as data_frame, else as array
-        remove_non_interacting_residues = if true, remove all fp bits that belong to residues for which there are no interactions
+        structures : list of core.Structure objects
+        labeled : bool
+            decide whether to make each fingerprint bit a labeled value
+            or simple integer
+        cumulative : bool
+            defines if the fp is a summed up fp or multiple structures
+        as_dataframe : bool
+            if true return fp as data_frame, else as array
+        remove_non_interacting_residues : bool
+            remove all fp bits that belong to residues for which
+            there are no interactions
+        remove_empty_interaction_types : bool
+            remove interaction types that do not report any residues
+        ensure_same_sequence : bool
+            if true, check that all residues are identical for each position
+            across structures. Only meaningful if cumulative=True
         """
 
         # TODO: Some boolean paths are not covered here! Provide errors or implement missing path.
@@ -79,7 +92,9 @@ class InteractionFingerprint:
                 )
 
         if cumulative:
-            cumul_fp = self._acumulate_fingerprints(fingerprints)
+            cumul_fp = self._acumulate_fingerprints(
+                fingerprints, ensure_same_sequence=ensure_same_sequence
+            )
             if labeled and as_dataframe:
                 plotdata = defaultdict(list)
                 for entry in cumul_fp:
@@ -94,21 +109,24 @@ class InteractionFingerprint:
                 df.index = labels
                 # change to eliminate redundant transpose
                 if remove_non_interacting_residues:
-                    df = df.T
+                    # remove all zero rows
+                    df = df.loc[(df != 0).any(axis=1)]
+                if remove_empty_interaction_types:
+                    # remove all zero columns
                     df = df.loc[:, (df != 0).any(axis=0)]
-                    return df.T
-                else:
-                    return df
+                return df
 
         return fingerprints
 
-    def _acumulate_fingerprints(self, fingerprints):
+    def _acumulate_fingerprints(self, fingerprints, ensure_same_sequence=True):
         """
         Calculate the cumulative fingerprint from fingerprints of multiple structures.
 
         Parameters
         ----------
         fingerprints = list of fingperprints to sum up
+        ensure_same_sequence = if true, check that all residues are identical
+            for each position across structures.
         """
         summed_fp = []
         # Iterate over the positions in the finger print
@@ -121,11 +139,21 @@ class InteractionFingerprint:
             total = sum([getattr(structure, "value", structure) for structure in position])
             if hasattr(position[0], "label"):  # this is the labeled fingerprint!
                 labels = [structure.label for structure in position]
-                # Check all residues are equivalent!
-                for attr in ("name", "seq_index", "chain"):
-                    attrs = [getattr(label["residue"], attr) for label in labels]
-                    assert all([attrs[0] == attr_ for attr_ in attrs[1:]])
-                assert all([labels[0]["type"] == label["type"] for label in labels[1:]])
+                if ensure_same_sequence:
+                    # Check all residues are equivalent!
+                    for attr in ("name", "seq_index", "chain"):
+                        attrs = set(getattr(label["residue"], attr) for label in labels)
+                        if len(attrs) > 1:
+                            raise ValueError(
+                                f"Residue at position {position[0].value} should be the same "
+                                f"one across structures. Too many seen values for `{attr}`: {attrs}! "
+                                f"Your structures might not be sequence-aligned."
+                            )
+                types = set(label["type"] for label in labels)
+                if len(types) > 1:
+                    raise ValueError(
+                        f"Position {position[0].value} contains more than one type: {types}."
+                    )
                 old_res = labels[0]["residue"]
                 residue = ProteinResidue(old_res.name, old_res.seq_index, old_res.chain)
                 new_label = {"residue": residue, "type": labels[0]["type"]}

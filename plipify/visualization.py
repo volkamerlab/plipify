@@ -54,7 +54,7 @@ def fingerprint_barplot(fingerprint_df):
     return fig
 
 
-def fingerprint_heatmap(fingerprint_df):
+def fingerprint_heatmap(fingerprint_df, cmap="YlGnBu"):
     """
     Visualize fingerprint as heatmap either based on count or fp_type.
 
@@ -64,7 +64,7 @@ def fingerprint_heatmap(fingerprint_df):
 
     """
     fig, ax = plt.subplots(figsize=(10, 7))  # plot size
-    sns.heatmap(fingerprint_df.T, annot=True, cmap="YlGnBu", ax=ax)
+    sns.heatmap(fingerprint_df.T, annot=True, cmap=cmap, ax=ax)
     ax.set_xlabel("Residues")
     ax.set_ylabel("Interaction Types")
     return fig
