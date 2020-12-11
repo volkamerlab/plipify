@@ -367,6 +367,9 @@ class Structure:
             return residue
 
     def sequence(self, with_gaps=True):
+        if not with_gaps:
+            return "".join([r.one_letter_code for r in self.residues])
+
         aabypos = {r.seq_index: r.one_letter_code for r in self.residues}
         max_residue = max(r.seq_index for r in self.residues)
         return "".join([aabypos.get(i, "-") for i in range(1, max_residue + 1)])

@@ -220,8 +220,13 @@ class InteractionFingerprint:
         -------
         indices : list of dict[int, int]
         """
+        sequences = [s.sequence() for s in structures]
+        maxlen = max(len(s) for s in sequences)
+        # pad with ending -
+        sequences = [s if len(s) == maxlen else (s + "-" * (maxlen - len(s))) for s in sequences]
 
-        records = [SeqRecord(Seq(s.sequence()), id=s.identifier) for s in structures]
+        identifiers = [s.identifier for s in structures]
+        records = [SeqRecord(Seq(s), id=i) for s, i in zip(sequences, identifiers)]
         unaligned = MultipleSeqAlignment(records)
 
         with TemporaryDirectory() as tmp:
