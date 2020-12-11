@@ -8,8 +8,15 @@ an interaction fingerprint.
 """
 
 from collections import defaultdict
+from tempfile import TemporaryDirectory
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
+from Bio.AlignIO.FastaIO import MultipleSeqAlignment, Seq, SeqRecord
+from Bio.Align.Applications import MuscleCommandline
+from Bio.AlignIO import write as write_alignment, read as read_alignment
+
 from .core import ProteinResidue
 
 
@@ -19,14 +26,10 @@ class InteractionFingerprint:
     analyze its interactions and report a fingerprint
     per residue.
 
-    Parameters
-    ----------
-    residue_indices : list of indices
     """
 
     def __init__(
         self,
-        residue_indices,
         interaction_types=(
             "hydrophobic",
             "hbond-don",
@@ -39,12 +42,13 @@ class InteractionFingerprint:
             "metal",
         ),
     ):
-        self.residue_indices = residue_indices
+        self.indices = None
         self.interaction_types = interaction_types
 
     def calculate_fingerprint(
         self,
         structures,
+        residue_indices=None,
         labeled=True,
         cumulative=True,
         as_dataframe=False,
@@ -58,6 +62,11 @@ class InteractionFingerprint:
         Parameters
         ----------
         structures : list of core.Structure objects
+        residue_indices :  list of dict[int, int], or None
+            list of dictionaries (one per structure) that maps
+            unaligned position in sequence vs aligned position (after
+            running Muscle on all the sequences). If not provided,
+            it will be auto computed with `self.calculate_indices_mapping`
         labeled : bool
             decide whether to make each fingerprint bit a labeled value
             or simple integer
@@ -74,21 +83,25 @@ class InteractionFingerprint:
             if true, check that all residues are identical for each position
             across structures. Only meaningful if cumulative=True
         """
+        if residue_indices is None:
+            residue_indices = self.calculate_indices_mapping(structures)
 
+        if len(structures) != len(residue_indices):
+            raise ValueError(
+                f"Number of residue indices mappings ({len(residue_indices)}) "
+                f"does not match number of structures ({len(structures)})"
+            )
         # TODO: Some boolean paths are not covered here! Provide errors or implement missing path.
         fingerprints = []
-        for structure in structures:
+        for structure, indices in zip(structures, residue_indices):
             try:
                 fingerprints.append(
-                    self._calculate_fingerprint_one_structure(structure, labeled=labeled)
+                    self._calculate_fingerprint_one_structure(structure, indices, labeled=labeled)
                 )
             except Exception as e:
                 print(
-                    "! Warning, could not process structure",
-                    structure,
-                    "due to error",
-                    type(e).__name__,
-                    e,
+                    f"! Warning, could not process structure {structure} "
+                    f"due to error `{type(e).__name__}`: {e}"
                 )
 
         if cumulative:
@@ -162,7 +175,7 @@ class InteractionFingerprint:
                 summed_fp.append(total)
         return summed_fp
 
-    def _calculate_fingerprint_one_structure(self, structure, labeled=False):
+    def _calculate_fingerprint_one_structure(self, structure, indices, labeled=False):
         """
         Calculate the interaction fingerprint for a single structure.
 
@@ -171,9 +184,9 @@ class InteractionFingerprint:
         structure = structure object based on pdb file
         labeled = boolean deciding whether to make each fingerprint bit a labeled value or simple integer
         """
-        fp_length = len(self.residue_indices) * len(self.interaction_types)
+        fp_length = len(indices) * len(self.interaction_types)
         fingerprint = []
-        for index in self.residue_indices:
+        for index in indices:
             residue = structure.get_residue_by(seq_index=index)
             counter = residue.count_interactions()
             for interaction in self.interaction_types:
@@ -190,6 +203,61 @@ class InteractionFingerprint:
 
     def clear_fingerprint(self):
         self._fingerprint = None
+
+    @staticmethod
+    def calculate_indices_mapping(structures):
+        """
+        Align sequences of `structures` and provide a mapping of
+        sequence positions to alignment positions (accounting for gaps).
+
+        Only matching residue types are reported.
+
+        Parameters
+        ----------
+        structures : list of plipify.core.Structure
+
+        Returns
+        -------
+        indices : list of dict[int, int]
+        """
+
+        records = [SeqRecord(Seq(s.sequence()), id=s.identifier) for s in structures]
+        unaligned = MultipleSeqAlignment(records)
+
+        with TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            infile = str(tmp / "in.fasta")
+            outfile = str(tmp / "out.fasta")
+            logfile = str(tmp / "log.txt")
+            write_alignment(unaligned, infile, "fasta")
+            cli = MuscleCommandline(input=infile, out=outfile, diags=True, maxiters=5, log=logfile)
+            cli()
+            aligned = read_alignment(outfile, "fasta")
+
+        offset = unaligned.get_alignment_length() - aligned.get_alignment_length()
+
+        old2new = []
+        for old in unaligned:
+            new = next(n for n in aligned if n.id == old.id)
+            new = "-" * offset + new
+            old2new.append({})
+            gaps = 0
+            keep = None
+            for i in range(unaligned.get_alignment_length()):
+                oldchar = old[i]
+                newchar = new[i]
+                if oldchar == newchar:
+                    if oldchar == "-":
+                        continue
+                    old2new[-1][i + 1] = i + 1
+                    if keep is not None:
+                        old2new[-1][keep] = keep + gaps
+                        gaps = 0
+                        keep = None
+                else:
+                    keep = i + 1
+                    gaps += 1
+        return old2new
 
 
 class _LabeledValue:

@@ -14,10 +14,11 @@ Namely:
 """
 
 from collections import defaultdict, Counter
+from pathlib import Path
 
 from plip.structure.preparation import PDBComplex
 from plip.exchange.report import BindingSiteReport
-
+from Bio.Data import IUPACData
 
 ###
 # Interaction Types
@@ -182,6 +183,17 @@ class ProteinResidue(BaseResidue):
     @property
     def identifier(self):
         return "{}:{}.{}".format(self.name, self.seq_index, self.chain)
+
+    def is_protein(self):
+        return self.name.title() in IUPACData.protein_letters_3to1
+
+    @property
+    def one_letter_code(self):
+        return IUPACData.protein_letters_3to1[self.name.title()]
+
+    @property
+    def three_letter_code(self):
+        return self.name.title()
 
 
 class LigandResidue(BaseResidue):
@@ -354,12 +366,26 @@ class Structure:
                 )
             return residue
 
-    def __repr__(self):
+    def sequence(self, with_gaps=True):
+        aabypos = {r.seq_index: r.one_letter_code for r in self.residues}
+        max_residue = max(r.seq_index for r in self.residues)
+        return "".join([aabypos.get(i, "-") for i in range(1, max_residue + 1)])
+
+    @property
+    def identifier(self):
+        if self._path:
+            return Path(self._path).stem
+
+    @property
+    def description(self):
         s = (
-            f"<{self.__class__.__name__} with {len(self.residues)} residues, "
+            f"{self.__class__.__name__} with {len(self.residues)} residues, "
             f"{len(self.ligands)} ligands "
             f"and {len(self.binding_sites)} binding sites"
         )
         if self._path:
             s += f" (loaded from file `{self._path}`)"
-        return s + ">"
+        return s
+
+    def __repr__(self) -> str:
+        return f"<{self.description}>"

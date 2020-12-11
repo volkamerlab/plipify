@@ -24,7 +24,9 @@ dependencies:
   - nglview
   - bravado
   - biopandas
-  - biotite 
+  - biotite
+  # alignment
+  - muscle
   # Testing
   - pytest
   - pytest-cov
