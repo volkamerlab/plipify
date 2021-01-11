@@ -45,6 +45,18 @@ class BaseInteraction:
     def __getitem__(self, value):
         return self.interaction[value]
 
+    def __repr__(self):
+        return f"<{self.__class__.__name__} with {self.interaction}>"
+
+    def to_dataframe(self):
+        import pandas as pd
+        return pd.DataFrame.from_dict(self.interaction, orient='index').T
+
+    def _ipython_display_(self):
+        if self.interaction:
+            from IPython.display import display
+            display(self.to_dataframe())
+
 
 class HydrophobicInteraction(BaseInteraction):
     """
