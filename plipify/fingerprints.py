@@ -7,7 +7,7 @@ an interaction fingerprint.
 
 """
 
-from collections import defaultdict
+from collections import defaultdict, Counter
 from tempfile import TemporaryDirectory
 from pathlib import Path
 
@@ -62,7 +62,7 @@ class InteractionFingerprint:
         Parameters
         ----------
         structures : list of core.Structure objects
-        residue_indices :  list of dict[int, int], or None
+        residue_indices :  list of dict[int, <int or None>], or None
             list of dictionaries (one per structure) that maps
             unaligned position in sequence vs aligned position (after
             running Muscle on all the sequences). If not provided,
@@ -96,7 +96,9 @@ class InteractionFingerprint:
         for structure, indices in zip(structures, residue_indices):
             try:
                 fingerprints.append(
-                    self._calculate_fingerprint_one_structure(structure, indices, labeled=labeled)
+                    self._calculate_fingerprint_one_structure(
+                        structure, indices.values(), labeled=labeled
+                    )
                 )
             except Exception as e:
                 print(
@@ -182,13 +184,18 @@ class InteractionFingerprint:
         Parameters
         ----------
         structure = structure object based on pdb file
-        labeled = boolean deciding whether to make each fingerprint bit a labeled value or simple integer
+        indices = list of residue sequence indices to compute interactions from
         """
+        empty_counter = Counter()
         fp_length = len(indices) * len(self.interaction_types)
         fingerprint = []
         for index in indices:
             residue = structure.get_residue_by(seq_index=index)
-            counter = residue.count_interactions()
+            if residue:
+                counter = residue.count_interactions()
+            else:
+                residue = "missing"
+                counter = empty_counter
             for interaction in self.interaction_types:
                 if labeled:
                     label = {"residue": residue, "type": interaction}

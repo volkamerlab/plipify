@@ -360,9 +360,10 @@ class Structure:
         """
 
         if index is None and seq_index is None:
-            raise ValueError("Specify ONE OF index or seq_index")
+            return None
         if index is not None and seq_index is not None:
             raise ValueError("Can only specify index OR seq_index, not both")
+
         if index is not None:
             return self.residues[index]
         if seq_index is not None:
