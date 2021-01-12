@@ -114,14 +114,10 @@ class InteractionFingerprint:
                 plotdata = defaultdict(list)
                 for entry in cumul_fp:
                     plotdata[entry.label["type"]].append(entry)
-                labels = [
-                    labeled_value.label["residue"].identifier
-                    for labeled_value in plotdata["hydrophobic"]
-                ]
                 df = pd.DataFrame.from_dict(
                     {k: [x.value for x in v] for (k, v) in plotdata.items()}
                 )
-                df.index = labels
+                df.index = residue_indices[0].keys()
                 # change to eliminate redundant transpose
                 if remove_non_interacting_residues:
                     # remove all zero rows
@@ -184,17 +180,22 @@ class InteractionFingerprint:
         Parameters
         ----------
         structure = structure object based on pdb file
-        indices = list of residue sequence indices to compute interactions from
+        indices = list of dict
+            each dict contains kwargs that match Structure.get_residue_by
+            so it can return a Residue object. For example:
+            {"seq_index": 1, "chain": "A"}
         """
         empty_counter = Counter()
         fp_length = len(indices) * len(self.interaction_types)
         fingerprint = []
-        for index in indices:
-            residue = structure.get_residue_by(seq_index=index)
+        for index_kwargs in indices:
+            residue = structure.get_residue_by(**index_kwargs)
             if residue:
                 counter = residue.count_interactions()
             else:
-                residue = "missing"
+                # FIXME: This is a bit hacky. Let's see if we can
+                # come up with something more elegant.
+                residue = ProteinResidue("GAP", 0, None)
                 counter = empty_counter
             for interaction in self.interaction_types:
                 if labeled:

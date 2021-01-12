@@ -50,11 +50,13 @@ class BaseInteraction:
 
     def to_dataframe(self):
         import pandas as pd
-        return pd.DataFrame.from_dict(self.interaction, orient='index').T
+
+        return pd.DataFrame.from_dict(self.interaction, orient="index").T
 
     def _ipython_display_(self):
         if self.interaction:
             from IPython.display import display
+
             display(self.to_dataframe())
 
 
@@ -370,6 +372,10 @@ class Structure:
             for residue in self.residues:
                 if residue.seq_index == seq_index:
                     if chain is None:  # TODO: Check there are no other residues with same index!
+                        print(
+                            "! Warning, you didn't select a chain. "
+                            "First match will be returned but there could be more."
+                        )
                         break
                     elif residue.chain == chain:
                         break
