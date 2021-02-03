@@ -57,7 +57,7 @@ class InteractionFingerprint:
         ensure_same_sequence=True,
     ):
         """
-        Calulative interaction fingerprint for one or multiple strcutures.
+        Cumulative interaction fingerprint for one or multiple structures.
 
         Parameters
         ----------
@@ -262,9 +262,9 @@ class InteractionFingerprint:
                 if oldchar == newchar:
                     if oldchar == "-":
                         continue
-                    old2new[-1][i + 1] = i + 1
+                    old2new[-1][i + 1] = {"seq_index": i + 1, "chain": "any"}
                     if keep is not None:
-                        old2new[-1][keep] = keep + gaps
+                        old2new[-1][keep] = {"seq_index": keep + gaps, "chain": "any"}
                         gaps = 0
                         keep = None
                 else:

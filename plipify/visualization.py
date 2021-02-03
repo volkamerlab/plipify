@@ -16,7 +16,9 @@ import seaborn as sns
 
 INTERACTION_PALETTE = {
     "hbond-don": "#22bbff",
+    "hbond-donor": "#22bbff",
     "hbond-acc": "#33ccff",
+    "hbond-acceptor": "#33ccff",
     "hydrophobic": "#ff6699",
     "waterbridge": "#4d4dff",
     "saltbridge": "#ff3300",
@@ -64,9 +66,9 @@ def fingerprint_heatmap(fingerprint_df, cmap="YlGnBu"):
 
     """
     fig, ax = plt.subplots(figsize=(10, 7))  # plot size
-    sns.heatmap(fingerprint_df.T, annot=True, cmap=cmap, ax=ax)
-    ax.set_xlabel("Residues")
-    ax.set_ylabel("Interaction Types")
+    sns.heatmap(fingerprint_df, annot=True, cmap=cmap, ax=ax)
+    ax.set_xlabel("Interaction Types")
+    ax.set_ylabel("Residues")
     return fig
 
 
@@ -253,8 +255,7 @@ def fingerprint_nglview(fingerprint_df, protein_path):
 
     selection, selection_ons = [], []
     tooltips = {}
-    for residue, row in fingerprint_df.iterrows():
-        resid = residue[4:].split(".")[0]
+    for resid, row in fingerprint_df.iterrows():
         values = sorted(zip(fingerprint_df.columns, row), key=lambda kv: kv[1], reverse=True)
         tooltips[resid] = ", ".join([f"{val}x{col.title()}" for (col, val) in values if val])
 

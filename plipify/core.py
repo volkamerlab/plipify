@@ -358,13 +358,19 @@ class Structure:
         Parameters
         ----------
         index, seq_index : int
-        chain : str
+        chain : str or None
+            If chain is None or "any", behaviour is not specified
+            shall there exist more than one residue with that
+            seq_index. If None, a warning will be emitted; this
+            warning is omitted if chain == "any".
         """
 
         if index is None and seq_index is None:
             return None
         if index is not None and seq_index is not None:
             raise ValueError("Can only specify index OR seq_index, not both")
+        if index is not None and chain not in (None, "any"):
+            raise ValueError("`index` does not support `chain` spec")
 
         if index is not None:
             return self.residues[index]
@@ -377,7 +383,7 @@ class Structure:
                             "First match will be returned but there could be more."
                         )
                         break
-                    elif residue.chain == chain:
+                    elif chain in ("any", residue.chain):
                         break
             else:  # break not reached!
                 raise ValueError(
