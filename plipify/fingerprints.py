@@ -40,6 +40,7 @@ class InteractionFingerprint:
             "pication",
             "halogen",
             "metal",
+            "covalent",
         ),
     ):
         self.indices = None

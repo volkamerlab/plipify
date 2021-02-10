@@ -66,6 +66,7 @@ class HydrophobicInteraction(BaseInteraction):
     """
 
     shorthand = "hydrophobic"
+    color_rgb = 0.90, 0.10, 0.29
 
 
 class HbondInteraction(BaseInteraction):
@@ -74,6 +75,7 @@ class HbondInteraction(BaseInteraction):
     """
 
     shorthand = "hbond"
+    color_rgb = 0.26, 0.83, 0.96
 
 
 class HbondDonorInteraction(HbondInteraction):
@@ -82,6 +84,7 @@ class HbondDonorInteraction(HbondInteraction):
     """
 
     shorthand = "hbond-don"
+    color_rgb = 0.26, 0.83, 0.96
 
 
 class HbondAcceptorInteraction(HbondInteraction):
@@ -90,6 +93,7 @@ class HbondAcceptorInteraction(HbondInteraction):
     """
 
     shorthand = "hbond-acc"
+    color_rgb = 0.26, 0.83, 0.96
 
 
 class WaterbridgeInteraction(BaseInteraction):
@@ -98,6 +102,7 @@ class WaterbridgeInteraction(BaseInteraction):
     """
 
     shorthand = "waterbridge"
+    color_rgb = 1.00, 0.88, 0.10
 
 
 class SaltbridgeInteraction(BaseInteraction):
@@ -106,6 +111,7 @@ class SaltbridgeInteraction(BaseInteraction):
     """
 
     shorthand = "saltbridge"
+    color_rgb = 0.67, 1.00, 0.76
 
 
 class PistackingInteraction(BaseInteraction):
@@ -114,6 +120,7 @@ class PistackingInteraction(BaseInteraction):
     """
 
     shorthand = "pistacking"
+    color_rgb = 0.75, 0.94, 0.27
 
 
 class PicationInteraction(BaseInteraction):
@@ -122,6 +129,7 @@ class PicationInteraction(BaseInteraction):
     """
 
     shorthand = "pication"
+    color_rgb = 0.27, 0.60, 0.56
 
 
 class HalogenInteraction(BaseInteraction):
@@ -130,6 +138,7 @@ class HalogenInteraction(BaseInteraction):
     """
 
     shorthand = "halogen"
+    color_rgb = 0.94, 0.20, 0.90
 
 
 class MetalInteraction(BaseInteraction):
@@ -138,6 +147,13 @@ class MetalInteraction(BaseInteraction):
     """
 
     shorthand = "metal"
+    color_rgb = 0.90, 0.75, 1.00
+
+
+class CovalentInteraction(BaseInteraction):
+
+    shorthand = "covalent"
+    color_rgb = 0, 0, 0
 
 
 ###
@@ -173,7 +189,10 @@ class ProteinResidue(BaseResidue):
     """
 
     # TODO: Fill list in!
-    _ALLOWED_RESIDUE_NAMES = []
+    _ALLOWED_RESIDUE_NAMES = set(
+        "ALA CYS ASP GLU PHE GLY HIS ILE LYS LEU "
+        "MET ASN PRO GLN ARG SER THR VAL TRP TYR".split()
+    )
 
     def __init__(self, name, seq_index, chain, interactions=None, structure=None):
         self.seq_index = seq_index
@@ -229,10 +248,16 @@ class BindingSite:
         self.name = name
 
     def __repr__(self):
-        return "<BindingSite with name='{}' and {} interactions>".format(
+        return "<BindingSite with name='{}' and {} interaction types>".format(
             self.name,
             len([interaction for interaction in self.interactions.values() if interaction]),
         )
+
+    def to_dataframes(self):
+        import pandas as pd
+
+        for itype, interactions in self.interactions.items():
+            yield itype, pd.concat([i.to_dataframe() for i in interactions])
 
 
 class Structure:
@@ -266,9 +291,10 @@ class Structure:
         self.ligands = ligands or []
         self.binding_sites = binding_sites or []
         self._path = None
+        self._pdbcomplex = None
 
     @classmethod
-    def from_pdbfile(cls, path, only_ligands=None, ligand_identifier=None):
+    def from_pdbfile(cls, path, ligand_name=None):
         """
         Read pdb file and then collect and process PLIP data.
 
@@ -276,10 +302,8 @@ class Structure:
         ----------
         path : str
             Path to an existing PDB file
-        only_ligands : list of str
-            Ligand names to characterize. Other ligands will be ignored.
-        ligand_identifier : str
-            A String that the binding site names start with, when they are ligand binding sites.
+        ligand_name : str or tuple of str
+            A string that the binding site names start with, when they are ligand binding sites.
             If filled, only binding sites with this identifier will be considered.
         """
         pdbcomplex = PDBComplex()
@@ -300,17 +324,20 @@ class Structure:
 
         structure.residues = residues
 
-        ligands = pdbcomplex.ligands
-        for ligand in ligands:
-            if only_ligands is not None and ligand.longname not in only_ligands:
+        ligands = []
+        ignored_ligands = []
+        for ligand in pdbcomplex.ligands:
+            if ligand_name is not None and not ligand.longname.startswith(ligand_name):
+                ignored_ligands.append(ligand)
                 continue
             pdbcomplex.characterize_complex(ligand)
+            ligands.append(ligand)
 
         binding_sites = []
         for key, site in sorted(pdbcomplex.interaction_sets.items()):
             report = BindingSiteReport(site)
             interactions = []
-            if ligand_identifier is None or key.startswith(ligand_identifier):
+            if ligand_name is None or key.startswith(ligand_name):
                 for InteractionType in cls.INTERACTIONS:
                     shorthand = InteractionType.shorthand
                     if shorthand == "hbond-acc":
@@ -347,7 +374,31 @@ class Structure:
                 binding_site = BindingSite(interactions_by_type, name=key)
                 binding_sites.append(binding_site)
 
+        for cov in pdbcomplex.covalent:
+            covkey = f"{cov.id1}:{cov.chain1}:{cov.pos1}"
+            ligand_idx, prot_idx = 1, 2
+            if cov.id1.upper() in ProteinResidue._ALLOWED_RESIDUE_NAMES:
+                ligand_idx, prot_idx = 2, 1
+
+            for bs in binding_sites:
+                if bs.name == covkey:
+                    bs.interactions["covalent"].append(
+                        CovalentInteraction(
+                            {
+                                "RESNR": getattr(cov, f"pos{prot_idx}"),
+                                "RESTYPE": getattr(cov, f"id{prot_idx}"),
+                                "RESCHAIN": getattr(cov, f"chain{prot_idx}"),
+                                "RESNR_LIG": getattr(cov, f"pos{ligand_idx}"),
+                                "RESTYPE_LIG": getattr(cov, f"id{ligand_idx}"),
+                                "RESCHAIN_LIG": getattr(cov, f"chain{ligand_idx}"),
+                            }
+                        )
+                    )
+
         structure.binding_sites = binding_sites
+        structure.ligands = ligands
+        structure.ignored_ligands = ignored_ligands
+        structure._pdbcomplex = pdbcomplex
         return structure
 
     def get_residue_by(self, index=None, seq_index=None, chain=None):
@@ -408,12 +459,87 @@ class Structure:
     def description(self):
         s = (
             f"{self.__class__.__name__} with {len(self.residues)} residues, "
-            f"{len(self.ligands)} ligands "
-            f"and {len(self.binding_sites)} binding sites"
+            f"{len(self.ligands) + len(self.ignored_ligands)} ligands "
+            f"({len(self.ignored_ligands)} of which were ignored) "
+            f"and {len(self.binding_sites)} characterized binding sites."
         )
         if self._path:
             s += f" (loaded from file `{self._path}`)"
         return s
+
+    def view(self, ligand_selection_query="ligand", solvent_selection_query="water"):
+        """
+        Show structure in NGLView
+
+        Parameters
+        ----------
+        ligand_selection_query : str
+            NGL selection query for the ligand(s) that should be depicted
+            as ball&stick and centered.
+        solvent_selection_query : str
+            NGL selection query for the solvent molecules that should
+            be depicted as lines.
+        Returns
+        -------
+        nglview.NGLWidget
+        """
+        path = Path(self._path)
+        if self._path is None or not path.exists():
+            print("3D View only available for structures loading from existing files.")
+            return
+
+        import nglview as nv
+
+        with open(self._path) as f:
+            v = nv.show_file(f, ext=path.suffix[1:], default_representation=False)
+            v.add_cartoon()
+            v.add_ball_and_stick(ligand_selection_query)
+            v.add_line(solvent_selection_query)
+            v.center(ligand_selection_query)
+            interacting_residues = set()
+
+            for bs in self.binding_sites:
+                for interaction_type, interactions in bs.interactions.items():
+                    for i in interactions:
+                        interacting_residues.add(i["RESNR"])
+                        if "LIGCOO" in i.interaction and "PROTCOO" in i.interaction:
+                            label = (
+                                f"{interaction_type.title()}: "
+                                f"{i['RESTYPE']}.{i['RESNR']}:{i['RESCHAIN']}-"
+                                f"{i['RESTYPE_LIG']}.{i['RESNR_LIG']}:{i['RESCHAIN_LIG']}"
+                            )
+                            v.shape.add_cylinder(
+                                i["LIGCOO"], i["PROTCOO"], i.color_rgb, [0.1], label
+                            )
+
+            # Display interacting residues
+            sidechains = " or ".join([f"({r} and not _H)" for r in interacting_residues])
+            non_carbon_atoms = " or ".join(
+                [f"({r} and ((_O) or (_N) or (_S)))" for r in interacting_residues]
+            )
+            v.add_ball_and_stick(sele=sidechains, colorScheme="chainindex", aspectRatio=1.5)
+            v.add_ball_and_stick(sele=non_carbon_atoms, colorScheme="element", aspectRatio=1.5)
+
+        return v
+
+    def to_dataframes(self):
+        try:
+            from IPython.display import display, Markdown
+
+            with_ipython = True
+        except ImportError:
+            with_ipython = False
+
+        dfs = []
+        for bs in self.binding_sites:
+            if with_ipython:
+                display(Markdown(f"### {bs.name}"))
+            for itype, df in bs.to_dataframes():
+                if with_ipython:
+                    display(Markdown(f"#### {itype.title()}"))
+                    display(df)
+                dfs.append((bs, itype, df))
+        return dfs
 
     def __repr__(self) -> str:
         return f"<{self.description}>"

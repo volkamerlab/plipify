@@ -53,6 +53,8 @@ def fingerprint_barplot(fingerprint_df):
         yaxis_title="Interactions",
         xaxis_title="Residues",
     )
+    fig.update_xaxes(type="category")
+
     return fig
 
 
@@ -66,7 +68,7 @@ def fingerprint_heatmap(fingerprint_df, cmap="YlGnBu"):
 
     """
     fig, ax = plt.subplots(figsize=(10, 7))  # plot size
-    sns.heatmap(fingerprint_df, annot=True, cmap=cmap, ax=ax)
+    sns.heatmap(fingerprint_df, annot=True, cmap=cmap, ax=ax, fmt="g")
     ax.set_xlabel("Interaction Types")
     ax.set_ylabel("Residues")
     return fig
@@ -234,39 +236,45 @@ def fingerprint_table(fingerprint_df, as_widget=True):
     return html
 
 
-def fingerprint_nglview(fingerprint_df, protein_path):
+def fingerprint_nglview(fingerprint_df, structure, fp_index_to_residue_id=None):
     """
     Depict interaction hotspots in NGLView
 
     Parameters
     ----------
     fingerprint_df: pandas.Dataframe
-    protein_path: str or pathlib.Path
+    structure: plipify.core.Structure
+    fp_key_to_residue_id : dict
+        Maps fingerprint index to the actual residue ids in `structure`.
+        Same as expected by InteractionFingerprint.calculate_fingerprint
+        `residue_indices`.
 
     Returns
     -------
     view : nglview.NGLWidget
     """
-    import nglview as nv
-
-    view = nv.NGLWidget(height="600px")
-    structure = nv.adaptor.FileStructure(str(protein_path))
-    protein_component = view.add_component(structure)
+    view = structure.view(solvent_selection_query="NOT all")
 
     selection, selection_ons = [], []
     tooltips = {}
     for resid, row in fingerprint_df.iterrows():
         values = sorted(zip(fingerprint_df.columns, row), key=lambda kv: kv[1], reverse=True)
+        if fp_index_to_residue_id is not None:
+            residue = structure.get_residue_by(**fp_index_to_residue_id[resid])
+            if residue:
+                resid = residue.seq_index
+            else:
+                print(resid, "->", fp_index_to_residue_id[resid], "not found in this structure")
+                continue
+
         tooltips[resid] = ", ".join([f"{val}x{col.title()}" for (col, val) in values if val])
 
         # Display interacting residues
         selection.append(f"({resid} and not _H)")
         selection_ons.append(f"({resid} and ((_O) or (_N) or (_S)))")
 
-    protein_component.add_ball_and_stick(
-        sele=" or ".join(selection), colorScheme="chainindex", aspectRatio=1.5
-    )
-    protein_component.add_ball_and_stick(
+    view.add_ball_and_stick(sele=" or ".join(selection), colorScheme="chainindex", aspectRatio=1.5)
+    view.add_ball_and_stick(
         sele=" or ".join(selection_ons), colorScheme="element", aspectRatio=1.5
     )
 
