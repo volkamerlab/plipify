@@ -10,7 +10,7 @@ dependencies:
   - pandas
   - tqdm
   - numpy
-  - jupyterlab
+  - jupyterlab>=3
   - nglview
   - plip
   - rdkit
@@ -19,6 +19,8 @@ dependencies:
   - plotly
   - ipywidgets
   - xlrd
+  - ambertools
+  - nglview>=3
   # opencadd
   - MDAnalysis
   - nglview
@@ -35,4 +37,4 @@ dependencies:
   - pip:
     - https://github.com/volkamerlab/opencadd/archive/master.tar.gz
 ## For nglview and other widgets, run:
-# jupyter labextension install @jupyter-widgets/jupyterlab-manager nglview-js-widgets @jupyterlab/toc plotlywidget jupyterlab-plotly
+# jupyter labextension install plotlywidget jupyterlab-plotly
