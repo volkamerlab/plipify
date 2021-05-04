@@ -16,8 +16,6 @@ Namely:
 from collections import defaultdict, Counter
 from pathlib import Path
 
-from plip.structure.preparation import PDBComplex
-from plip.exchange.report import BindingSiteReport
 from Bio.Data import IUPACData
 
 ###
@@ -294,7 +292,7 @@ class Structure:
         self._pdbcomplex = None
 
     @classmethod
-    def from_pdbfile(cls, path, ligand_name=None):
+    def from_pdbfile(cls, path, ligand_name=None, protonate=True):
         """
         Read pdb file and then collect and process PLIP data.
 
@@ -305,7 +303,18 @@ class Structure:
         ligand_name : str or tuple of str
             A string that the binding site names start with, when they are ligand binding sites.
             If filled, only binding sites with this identifier will be considered.
+        protonate : bool, optional=True
+            Whether to allow PLIP to automatically protonate the structure or not. If you
+            choose False, take into account that you should provide already protonated
+            structures for accurate results.
         """
+        if not protonate:
+            from plip.basic import config
+
+            config.NOHYDRO = not protonate
+        from plip.structure.preparation import PDBComplex
+        from plip.exchange.report import BindingSiteReport
+
         pdbcomplex = PDBComplex()
         pdbcomplex.load_pdb(path)
 
