@@ -12,6 +12,7 @@ further and creates mutliple different visualizations:
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import seaborn as sns
+import MDAnalysis as mda
 
 
 INTERACTION_PALETTE = {
@@ -342,3 +343,16 @@ def fingerprint_nglview(fingerprint_df, structure, fp_index_to_residue_id=None):
     view._js(infotext_js)
 
     return view
+
+def fingerprint_bfactor(fingerprint_df, structure) -> None:
+
+    # define structure as mda.Universe
+    u = mda.Universe(structure._path)
+
+    # set temperature factors, default = 0 for all residues
+    u.add_TopologyAttr('tempfactors')
+
+    # TODO dynamically add temperature factors based on interaction type
+    for row in fingerprint_df.iterrows():
+        print(row)
+    pass
