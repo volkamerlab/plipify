@@ -19,7 +19,7 @@ import pymol
 import seaborn as sns
 from pymol import cmd, util
 
-from core import Structure
+from plipify.core import Structure
 
 INTERACTION_PALETTE = {
     "hbond-don": "#22bbff",
