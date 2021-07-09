@@ -344,15 +344,51 @@ def fingerprint_nglview(fingerprint_df, structure, fp_index_to_residue_id=None):
 
     return view
 
-def fingerprint_bfactor(fingerprint_df, structure) -> None:
+def fingerprint_writepdb(fingerprint_df, structure, ligand=False, ligand_name="LIG") -> dict:
+    """
+    Write interaction hotspots to a PDB file
 
-    # define structure as mda.Universe
-    u = mda.Universe(structure._path)
+    Parameters
+    ----------
+    fingerprint_df: pandas.Dataframe
+    structure: plipify.core.Structure
+    ligand: bool
+        Set to True to write out the bound ligand structure
+    ligand_name: str
+        The name of the bound ligand
 
-    # set temperature factors, default = 0 for all residues
-    u.add_TopologyAttr('tempfactors')
+    Returns
+    -------
+    systems: dict[str: mda.Universe]
+    """
 
-    # TODO dynamically add temperature factors based on interaction type
-    for row in fingerprint_df.iterrows():
-        print(row)
-    pass
+    for interaction_col in fingerprint_df: # loop over interaction types
+
+        systems = {interaction : None for interaction in list(fingerprint_df)}
+
+        # define structure as mda.Universe
+        u = mda.Universe(structure._path)
+
+        # set temperature factors, default = 0 for all residues
+        u.add_TopologyAttr('tempfactors')
+
+        if ligand:
+            sel_string = f"protein or resname {ligand_name}"
+        else:
+            sel_string = "protein"
+
+        sys = u.select_atoms(sel_string)
+
+        for resid, value in fingerprint_df[interaction_col].iteritems(): # loop over residues
+
+            # assign temperature facture value based on interaction value
+            sel = sys.select_atoms(f"resid {str(resid)}")
+            sel.atoms.tempfactors = value
+        
+        # write out new pdb for interaction type
+        with mda.Writer(f"sys_{str(interaction_col)}.pdb", sys.n_atoms) as W:
+            W.write(sys)
+        
+        systems[interaction_col] = sys
+
+    return systems
