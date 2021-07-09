@@ -9,11 +9,17 @@ further and creates mutliple different visualizations:
 - Colour coded fingerprint table
 """
 
-import matplotlib.pyplot as plt
-import plotly.graph_objects as go
-import seaborn as sns
-import MDAnalysis as mda
+import os
+from pathlib import Path
 
+import matplotlib.pyplot as plt
+import MDAnalysis as mda
+import plotly.graph_objects as go
+import pymol
+import seaborn as sns
+from pymol import cmd, util
+
+from core import Structure
 
 INTERACTION_PALETTE = {
     "hbond-don": "#22bbff",
@@ -377,7 +383,7 @@ def fingerprint_writepdb(
 
     Returns
     -------
-    systems: dict[str: mda.Universe]
+    systems: dict[str: plipify.core.Structure]
     """
 
     def _load_universe(input_structure):
@@ -395,9 +401,9 @@ def fingerprint_writepdb(
     else:
         sel_string = "protein"
 
-    for interaction_col in fingerprint_df:  # loop over interaction types
+    systems = {interaction: None for interaction in list(fingerprint_df)}
 
-        systems = {interaction: None for interaction in list(fingerprint_df)}
+    for interaction_col in fingerprint_df:  # loop over interaction types
 
         # create MDAnalysis.Universe
         u_int = _load_universe(structure._path)
@@ -427,7 +433,9 @@ def fingerprint_writepdb(
         else:
             print(f"Written sys_int_{str(interaction_col)}.pdb to {OUTDIR}")
 
-        systems[interaction_col] = sys_int
+        systems[interaction_col] = Structure.from_pdbfile(
+            str(OUTDIR / f"sys_int_{str(interaction_col)}.pdb")
+        )
 
     # sum interactions to get total number per residue
     fingerprint_df_sum = fingerprint_df.T.sum()
@@ -452,6 +460,161 @@ def fingerprint_writepdb(
     else:
         print(f"Written sys_summed_interactions.pdb to {OUTDIR}")
 
-    systems["summed_interactions"] = sys_summed
+    systems["summed_interactions"] = Structure.from_pdbfile(
+        str(OUTDIR / f"sys_summed_interactions.pdb")
+    )
 
     return systems
+
+
+class VisPymol(object):
+    def __init__(self, pdb, ligand_interactions=True):
+
+        self._pdb = pdb
+        self._ligand_interactions = ligand_interactions
+
+    def load(self):
+
+        # Launch pymol session
+        pymol.pymol_argv = ["pymol", "-qc"] + sys.argv[1:]
+        pymol.finish_launching()
+
+        # Load file
+        if os.path.exists(self._pdb):
+            cmd.load(self._pdb)
+        else:
+            raise FileNotFoundError(f"{self._pdb} not found")
+
+        # Rename objects
+        name = os.path.splitext(os.path.basename(self._pdb))[0]
+        cmd.set_name(name, "system")
+
+        # Remove solvent
+        # TODO check for more names
+        cmd.remove("resn HOH")
+        cmd.remove("resn SOL")
+        cmd.remove("resn NA")
+        cmd.remove("resn CL")
+
+    def set_style(
+        self,
+        ambient=0.4,
+        ambient_occlusion_mode=1,
+        ambient_occlistion_scale=15,
+        background_col="white",
+        antialias=1,
+        ortho=1,
+        ray_trace_mode=0,
+    ):
+
+        # Add filter (ambient) and other misc settings
+        # TODO add other options
+
+        cmd.set("ambient", ambient)
+        cmd.set("ambient_occlusion_mode", ambient_occlusion_mode)
+        cmd.set("ambient_occlusion_scale", ambient_occlistion_scale)
+        cmd.bg_colour(background_col)
+        cmd.set("antialias", antialias)
+        cmd.set("ortho", ortho)
+        cmd.set("ray_trace_mode", ray_trace_mode)
+
+    def vis_ints(
+        self,
+        highlight_style="sticks",
+        show_backbone=False,
+        surface=False,
+        protein_style="cartoon",
+        protein_col="white",
+        show_ligand=True,
+        ligand_style="sticks",
+        ligand_col="cyan",
+        ligand_resname="LIG",
+        spectrum_col="white_green",
+        surface_mode=3,
+        transparency=0.75,
+        cnc_protein=False,
+        cnc_ligand=True,
+        viewport_x=720,
+        viewport_y=720,
+    ):
+
+        self._viewport_x = viewport_x
+        self._viewport_y = viewport_y
+
+        c_dict = {
+            "yellow": cmd.util.cbay,
+            "green": cmd.util.cbag,
+            "cyan": cmd.util.cbac,
+            "light magenta": cmd.util.cbam,
+            "salmon": cmd.util.cbam,
+            "white": cmd.util.cbaw,
+            "slate": cmd.util.cbab,
+            "orange": cmd.util.cbao,
+            "purple": cmd.util.cbap,
+            "pink": cmd.util.cbak,
+        }
+
+        cmd.select("prot", "bb. or sc.")
+        if show_ligand:
+            cmd.select("ligand", f"resn {ligand_resname}")
+
+        # Sort out protein and ligand colours
+        if show_ligand:
+            c_dict[ligand_col]("ligand")
+        c_dict[protein_col]("prot")
+
+        # Show molecular representation
+        cmd.hide("all")
+        cmd.dss("prot")
+
+        # colour based on bfactor
+        if self._ligand_interactions:
+            cmd.spectrum("b", spectrum_col, "prot")
+            if show_backbone:
+                cmd.show(highlight_style, "prot and not hydrogen and b > 0")
+            else:
+                cmd.show(
+                    highlight_style,
+                    "prot and not name N and not name C and not name O and not hydrogen and b > 0",
+                )
+
+        cmd.show(protein_style, "prot and not hydrogen")
+        if surface:
+            cmd.show("surface", "prot and not hydrogen")
+        cmd.enable("prot")
+
+        if show_ligand:
+            cmd.enable("ligand")
+            cmd.show(ligand_style, "ligand and not hydrogen")
+            if cnc_ligand:
+                util.cnc("ligand")
+
+        if surface:
+            cmd.set("surface_mode", surface_mode)
+            cmd.set("transparency", transparency)
+
+        if cnc_protein:
+            util.cnc("prot")
+
+        # Set the viewport and view
+        cmd.viewport(self._viewport_x, self._viewport_y)
+
+        # TODO remove hardcoded view - this is currently set for MPro
+        cmd.set_view(
+            "\
+            -0.665904999,   -0.394821048,   -0.632996082,\
+            0.296537369,   -0.918650806,    0.261042088,\
+            -0.684570849,   -0.013875127,    0.728814185,\
+            0.000000000,    0.000000000,  -95.144737244,\
+            8.413966179,   -0.994599819,   22.830898285,\
+            56.102233887,  134.187240601,   20.000000000 "
+        )
+
+    def render(self, name, save_path="./", dpi=300):
+
+        d = Path(save_path)
+        d.mkdir(exist_ok=True, parents=True)
+
+        # Create image
+        cmd.ray(self._viewport_x, self._viewport_y)
+        cmd.png(str(d / f"{name}.png"), dpi=dpi)
