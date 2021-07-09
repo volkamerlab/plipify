@@ -42,7 +42,9 @@ def fingerprint_barplot(fingerprint_df):
     fig = go.Figure(
         data=[
             go.Bar(
-                name=interaction, x=list(fingerprint_df.index), y=list(fingerprint_df[interaction])
+                name=interaction,
+                x=list(fingerprint_df.index),
+                y=list(fingerprint_df[interaction]),
             )
             for interaction in sorted(fingerprint_df.columns, reverse=True)
         ],
@@ -259,22 +261,33 @@ def fingerprint_nglview(fingerprint_df, structure, fp_index_to_residue_id=None):
     selection, selection_ons = [], []
     tooltips = {}
     for resid, row in fingerprint_df.iterrows():
-        values = sorted(zip(fingerprint_df.columns, row), key=lambda kv: kv[1], reverse=True)
+        values = sorted(
+            zip(fingerprint_df.columns, row), key=lambda kv: kv[1], reverse=True
+        )
         if fp_index_to_residue_id is not None:
             residue = structure.get_residue_by(**fp_index_to_residue_id[resid])
             if residue:
                 resid = residue.seq_index
             else:
-                print(resid, "->", fp_index_to_residue_id[resid], "not found in this structure")
+                print(
+                    resid,
+                    "->",
+                    fp_index_to_residue_id[resid],
+                    "not found in this structure",
+                )
                 continue
 
-        tooltips[resid] = ", ".join([f"{val}x{col.title()}" for (col, val) in values if val])
+        tooltips[resid] = ", ".join(
+            [f"{val}x{col.title()}" for (col, val) in values if val]
+        )
 
         # Display interacting residues
         selection.append(f"({resid} and not _H)")
         selection_ons.append(f"({resid} and ((_O) or (_N) or (_S)))")
 
-    view.add_ball_and_stick(sele=" or ".join(selection), colorScheme="chainindex", aspectRatio=1.5)
+    view.add_ball_and_stick(
+        sele=" or ".join(selection), colorScheme="chainindex", aspectRatio=1.5
+    )
     view.add_ball_and_stick(
         sele=" or ".join(selection_ons), colorScheme="element", aspectRatio=1.5
     )
@@ -344,7 +357,10 @@ def fingerprint_nglview(fingerprint_df, structure, fp_index_to_residue_id=None):
 
     return view
 
-def fingerprint_writepdb(fingerprint_df, structure, output_path, ligand=False, ligand_name="LIG") -> dict:
+
+def fingerprint_writepdb(
+    fingerprint_df, structure, output_path, ligand=False, ligand_name="LIG"
+) -> dict:
     """
     Write interaction hotspots to a PDB file
 
@@ -364,37 +380,78 @@ def fingerprint_writepdb(fingerprint_df, structure, output_path, ligand=False, l
     systems: dict[str: mda.Universe]
     """
 
+    def _load_universe(input_structure):
+        u = mda.Universe(input_structure)
+
+        return u
+
     # create output directory to store generated PDBs
     OUTDIR = output_path / "interaction_pdbs"
     OUTDIR.mkdir(exist_ok=True, parents=True)
 
-    for interaction_col in fingerprint_df: # loop over interaction types
+    # set selection strings
+    if ligand:
+        sel_string = f"protein or resname {ligand_name}"
+    else:
+        sel_string = "protein"
 
-        systems = {interaction : None for interaction in list(fingerprint_df)}
+    for interaction_col in fingerprint_df:  # loop over interaction types
 
-        # define structure as mda.Universe
-        u = mda.Universe(structure._path)
+        systems = {interaction: None for interaction in list(fingerprint_df)}
+
+        # create MDAnalysis.Universe
+        u_int = _load_universe(structure._path)
 
         # set temperature factors, default = 0 for all residues
-        u.add_TopologyAttr('tempfactors')
+        u_int.add_TopologyAttr("tempfactors")
 
-        if ligand:
-            sel_string = f"protein or resname {ligand_name}"
-        else:
-            sel_string = "protein"
+        sys_int = u_int.select_atoms(sel_string)
 
-        sys = u.select_atoms(sel_string)
-
-        for resid, value in fingerprint_df[interaction_col].iteritems(): # loop over residues
+        for resid, value in fingerprint_df[
+            interaction_col
+        ].iteritems():  # loop over residues
 
             # assign temperature facture value based on interaction value
-            sel = sys.select_atoms(f"resid {str(resid)}")
+            sel = sys_int.select_atoms(f"resid {str(resid)}")
             sel.atoms.tempfactors = value
-        
+
         # write out new pdb for interaction type
-        with mda.Writer(OUTDIR / f"sys_{str(interaction_col)}.pdb", sys.n_atoms) as W:
-            W.write(sys)
-        
-        systems[interaction_col] = sys
+        try:
+            with mda.Writer(
+                OUTDIR / f"sys_int_{str(interaction_col)}.pdb", sys_int.n_atoms
+            ) as W:
+                W.write(sys_int)
+        except:
+            print(f"Warning! Couldn't write sys_int_{str(interaction_col)}.pdb")
+            continue
+        else:
+            print(f"Written sys_int_{str(interaction_col)}.pdb to {OUTDIR}")
+
+        systems[interaction_col] = sys_int
+
+    # sum interactions to get total number per residue
+    fingerprint_df_sum = fingerprint_df.T.sum()
+
+    u_summed = _load_universe(structure._path)
+    u_summed.add_TopologyAttr("tempfactors")
+    sys_summed = u_summed.select_atoms(sel_string)
+
+    for resid, summed_ints in fingerprint_df_sum.iteritems():
+
+        sel_summed = sys_summed.select_atoms(f"resid {str(resid)}")
+        sel_summed.atoms.tempfactors = summed_ints
+
+    # write out new pdb for total interactions
+    try:
+        with mda.Writer(
+            OUTDIR / f"sys_summed_interactions.pdb", sys_summed.n_atoms
+        ) as W:
+            W.write(sys_summed)
+    except:
+        print("Warning! Couldn't write sys_summed_interactions.pdb")
+    else:
+        print(f"Written sys_summed_interactions.pdb to {OUTDIR}")
+
+    systems["summed_interactions"] = sys_summed
 
     return systems
