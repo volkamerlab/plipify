@@ -344,7 +344,7 @@ def fingerprint_nglview(fingerprint_df, structure, fp_index_to_residue_id=None):
 
     return view
 
-def fingerprint_writepdb(fingerprint_df, structure, ligand=False, ligand_name="LIG") -> dict:
+def fingerprint_writepdb(fingerprint_df, structure, output_path, ligand=False, ligand_name="LIG") -> dict:
     """
     Write interaction hotspots to a PDB file
 
@@ -352,6 +352,8 @@ def fingerprint_writepdb(fingerprint_df, structure, ligand=False, ligand_name="L
     ----------
     fingerprint_df: pandas.Dataframe
     structure: plipify.core.Structure
+    output_path: pathlib.PosixPath
+        A path to store the output files
     ligand: bool
         Set to True to write out the bound ligand structure
     ligand_name: str
@@ -361,6 +363,10 @@ def fingerprint_writepdb(fingerprint_df, structure, ligand=False, ligand_name="L
     -------
     systems: dict[str: mda.Universe]
     """
+
+    # create output directory to store generated PDBs
+    OUTDIR = output_path / "interaction_pdbs"
+    OUTDIR.mkdir(exist_ok=True, parents=True)
 
     for interaction_col in fingerprint_df: # loop over interaction types
 
@@ -386,7 +392,7 @@ def fingerprint_writepdb(fingerprint_df, structure, ligand=False, ligand_name="L
             sel.atoms.tempfactors = value
         
         # write out new pdb for interaction type
-        with mda.Writer(f"sys_{str(interaction_col)}.pdb", sys.n_atoms) as W:
+        with mda.Writer(OUTDIR / f"sys_{str(interaction_col)}.pdb", sys.n_atoms) as W:
             W.write(sys)
         
         systems[interaction_col] = sys
