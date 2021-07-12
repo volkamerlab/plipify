@@ -436,7 +436,7 @@ def fingerprint_writepdb(
                 OUTDIR / f"sys_int_{str(interaction_col)}.pdb", sys_int.n_atoms
             ) as W:
                 W.write(sys_int)
-        except:
+        except TypeError:
             print(f"Warning! Couldn't write sys_int_{str(interaction_col)}.pdb")
             continue
         else:
@@ -463,16 +463,16 @@ def fingerprint_writepdb(
         # write out new pdb for total interactions
         try:
             with mda.Writer(
-                OUTDIR / f"sys_summed_interactions.pdb", sys_summed.n_atoms
+                OUTDIR / "sys_summed_interactions.pdb", sys_summed.n_atoms
             ) as W:
                 W.write(sys_summed)
-        except:
+        except TypeError:
             print("Warning! Couldn't write sys_summed_interactions.pdb")
         else:
             print(f"Written sys_summed_interactions.pdb to {OUTDIR}")
 
         systems["summed_interactions"] = Structure.from_pdbfile(
-            str(OUTDIR / f"sys_summed_interactions.pdb")
+            str(OUTDIR / "sys_summed_interactions.pdb")
         )
 
     return systems
