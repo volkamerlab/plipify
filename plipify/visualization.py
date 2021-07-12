@@ -512,7 +512,7 @@ class VisPymol(object):
 
         # Launch pymol session
         print("Launching PyMol session...")
-        pymol.pymol_argv = ["pymol", "-qc"] + sys.argv[1:]
+        pymol.pymol_argv = ["pymol", "-qc"] #+ sys.argv[1:]
         pymol.finish_launching()
 
         # Load file
