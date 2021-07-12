@@ -468,18 +468,36 @@ def fingerprint_writepdb(
 
 
 class VisPymol(object):
-    def __init__(self, pdb, ligand_interactions=True):
+    """
+    A series of tools to create publication ready images using PyMol
+
+    Parameters
+    ----------
+    pdb : str
+       Path to PDB file to load e.g. plipify.core.Structure._path
+    ligand_interactions: bool
+        Specify whether to highlight residues in contact with the ligand.
+        This requires a pdb file with bfactor values > 0
+        e.g. from plipify.visualization.fingerprint_writepdb
+    """
+
+    def __init__(self, pdb: str, ligand_interactions: bool = True):
 
         self._pdb = pdb
         self._ligand_interactions = ligand_interactions
 
     def load(self):
+        """
+        Load a pdb file into a PyMol session
+        """
 
         # Launch pymol session
+        print("Launching PyMol session...")
         pymol.pymol_argv = ["pymol", "-qc"] + sys.argv[1:]
         pymol.finish_launching()
 
         # Load file
+        print("Loading supplied PDB file...")
         if os.path.exists(self._pdb):
             cmd.load(self._pdb)
         else:
@@ -498,49 +516,110 @@ class VisPymol(object):
 
     def set_style(
         self,
-        ambient=0.4,
-        ambient_occlusion_mode=1,
-        ambient_occlistion_scale=15,
-        background_col="white",
-        antialias=1,
-        ortho=1,
-        ray_trace_mode=0,
+        ambient: float = 0.4,
+        ambient_occlusion_mode: int = 1,
+        ambient_occlusion_scale: float = 15,
+        background_col: str = "white",
+        antialias: int = 1,
+        ortho: int = 1,
+        ray_trace_mode: int = 0,
     ):
+
+        """
+        Set style using PyMol parameters
+
+        Parameters
+        ----------
+        ambient : float
+            Set the amount of ambient light (0-1), default = 0.4
+        ambient_occlusion_mode : int
+            Darken areas of the protein that are occluded (0 = off, 1 = on), default = 1
+        ambient_occlusion_scale : float
+            The scale by which ambient occlusion values are modified, default = 15
+        background_col : str
+            The background colour, default = "white"
+        antialias : int
+            Control the amount of antialiasing PyMol does using ray (0-4), default = 1
+        ortho : int
+            Specify whether to use an orthographic view (0 = off, 1 = on), default = 1
+        ray_trace_mode : int
+            Control in-built PyMol ray trace mode (0-3), default = 0
+        """
 
         # Add filter (ambient) and other misc settings
         # TODO add other options
 
         cmd.set("ambient", ambient)
         cmd.set("ambient_occlusion_mode", ambient_occlusion_mode)
-        cmd.set("ambient_occlusion_scale", ambient_occlistion_scale)
+        cmd.set("ambient_occlusion_scale", ambient_occlusion_scale)
         cmd.bg_colour(background_col)
         cmd.set("antialias", antialias)
         cmd.set("ortho", ortho)
         cmd.set("ray_trace_mode", ray_trace_mode)
 
-    def vis_ints(
+    def create_image(
         self,
-        highlight_style="sticks",
-        show_backbone=False,
-        surface=False,
-        protein_style="cartoon",
-        protein_col="white",
-        show_ligand=True,
-        ligand_style="sticks",
-        ligand_col="cyan",
-        ligand_resname="LIG",
-        spectrum_col="white_green",
-        surface_mode=3,
-        transparency=0.75,
-        cnc_protein=False,
-        cnc_ligand=True,
-        viewport_x=720,
-        viewport_y=720,
+        highlight_style: str = "sticks",
+        show_backbone: bool = False,
+        spectrum_col: str = "white_green",
+        surface: bool = False,
+        surface_mode: int = 3,
+        transparency: float = 0.75,
+        protein_style: str = "cartoon",
+        protein_col: str = "white",
+        show_ligand: bool = True,
+        ligand_resname: str = "LIG",
+        ligand_style: str = "sticks",
+        ligand_col: str = "cyan",
+        cnc_protein: bool = False,
+        cnc_ligand: bool = True,
+        viewport_x: int = 720,
+        viewport_y: int = 720,
     ):
+
+        """
+        Create a PyMol image
+
+        Parameters
+        ----------
+        highlight_style : str
+            Set the style for residues to be highlighted as, default = "sticks"
+        show_backbone : bool
+            Specify whether to show the backbone of highlighted residues, default = False
+        spectrum_col : str
+            Set the spectrum colour to use for highlighting interaction sites, default = "white_green"
+        surface : bool
+            Specify whether to show the protein surface, default = False
+        surface_mode : int
+            Set what atoms are used to specify the surface (0-2), default = 3
+        transparency : float
+            Set the transparency of the surface if specified, default = 0.75
+        protein_style : str
+            Set the protein style, default = "cartoon"
+        protein_col : str
+            Set the protein colour, default = "white"
+        show_ligand : bool
+            Specify whether to show a bound ligand based on ligand_resname, default = True
+        ligand_resname : str
+            The name of the bound ligand, default = "LIG"
+        ligand_style : str
+            Set the ligand style, default = "sticks"
+        ligand_col : str
+            Set the ligand colour, default = "cyan"
+        cnc_protein : bool
+            Specify whether to only colour Carbon atoms in the protein, default = False
+        cnc_ligand : bool
+            Specify whether to only colour Carbon atoms in the ligand, default = True
+        viewport_x : int
+            Set the viewport dimensions in x, default = 720
+        viewport_y : int
+            Set the viewport dimensions in y, default = 720
+        """
 
         self._viewport_x = viewport_x
         self._viewport_y = viewport_y
 
+        # Set colour dictionary
         c_dict = {
             "yellow": cmd.util.cbay,
             "green": cmd.util.cbag,
@@ -554,7 +633,9 @@ class VisPymol(object):
             "pink": cmd.util.cbak,
         }
 
+        # Select protein residues (backbone and sidechain)
         cmd.select("prot", "bb. or sc.")
+
         if show_ligand:
             cmd.select("ligand", f"resn {ligand_resname}")
 
@@ -563,12 +644,14 @@ class VisPymol(object):
             c_dict[ligand_col]("ligand")
         c_dict[protein_col]("prot")
 
-        # Show molecular representation
+        # Hide everything
         cmd.hide("all")
+        # Ensure secondary structure is show correctly
         cmd.dss("prot")
 
-        # colour based on bfactor
+        # Colour protein residues based on bfactor value, if specified
         if self._ligand_interactions:
+            print("Highlighting ligand interaction sites...")
             cmd.spectrum("b", spectrum_col, "prot")
             if show_backbone:
                 cmd.show(highlight_style, "prot and not hydrogen and b > 0")
@@ -578,25 +661,30 @@ class VisPymol(object):
                     "prot and not name N and not name C and not name O and not hydrogen and b > 0",
                 )
 
+        # Show the whole protein
         cmd.show(protein_style, "prot and not hydrogen")
         if surface:
             cmd.show("surface", "prot and not hydrogen")
         cmd.enable("prot")
 
+        # Show the ligand, if specified
         if show_ligand:
             cmd.enable("ligand")
             cmd.show(ligand_style, "ligand and not hydrogen")
             if cnc_ligand:
                 util.cnc("ligand")
 
+        # Add a protein surface, if specified
         if surface:
             cmd.set("surface_mode", surface_mode)
             cmd.set("transparency", transparency)
 
+        # Colour only Carbon atoms, if specified
         if cnc_protein:
             util.cnc("prot")
 
         # Set the viewport and view
+        print("Setting PyMol view...")
         cmd.viewport(self._viewport_x, self._viewport_y)
 
         # TODO remove hardcoded view - this is currently set for MPro
@@ -612,9 +700,26 @@ class VisPymol(object):
 
     def render(self, name, save_path="./", dpi=300):
 
+        """
+        Render PyMol image
+
+        Parameters
+        ----------
+
+        name : str
+            The name of the image
+        save_path : str
+            The path of where to save the PyMol image, default = "./"
+        dpi : float
+            The dots per inch of the image, default = 300
+        """
+
         d = Path(save_path)
         d.mkdir(exist_ok=True, parents=True)
 
         # Create image
+        print("Rendering PyMol image...")
         cmd.ray(self._viewport_x, self._viewport_y)
-        cmd.png(str(d / f"{name}.png"), dpi=dpi)
+        filename = str(d / f"{name}.png")
+        cmd.png(filename, dpi=dpi)
+        print(f"Image created! Saving to {filename}")
