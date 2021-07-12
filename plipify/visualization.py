@@ -543,7 +543,7 @@ class VisPymol(object):
         antialias: int = 1,
         ortho: int = 1,
         ray_trace_mode: int = 0,
-        flat_sheets: int = 1, 
+        flat_sheets: int = 1,
     ):
 
         """
@@ -689,8 +689,7 @@ class VisPymol(object):
                 # Handle Proline
                 cmd.show(
                     highlight_style,
-                    "resn PRO and not name C and not name O and not hydrogen and b > 0"
-
+                    "resn PRO and not name C and not name O and not hydrogen and b > 0",
                 )
 
         # Show the whole protein
