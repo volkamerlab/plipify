@@ -28,7 +28,7 @@ dependencies:
   - bravado
   - biopandas
   - biotite
-  - pymol
+  - pymol-bundle
   # alignment
   - muscle
   # Testing
