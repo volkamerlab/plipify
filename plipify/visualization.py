@@ -17,7 +17,7 @@ import MDAnalysis as mda
 import plotly.graph_objects as go
 import pymol
 import seaborn as sns
-from pymol import cmd, util
+from pymol import cmd, util, sys
 
 from plipify.core import Structure
 
@@ -365,7 +365,12 @@ def fingerprint_nglview(fingerprint_df, structure, fp_index_to_residue_id=None):
 
 
 def fingerprint_writepdb(
-    fingerprint_df, structure, output_path, ligand=False, ligand_name="LIG"
+    fingerprint_df,
+    structure,
+    output_path,
+    ligand=False,
+    ligand_name="LIG",
+    summed=False,
 ) -> dict:
     """
     Write interaction hotspots to a PDB file
@@ -380,6 +385,8 @@ def fingerprint_writepdb(
         Set to True to write out the bound ligand structure
     ligand_name: str
         The name of the bound ligand
+    summed : bool
+        Specify whether to write out summed interaction PDB, default = False
 
     Returns
     -------
@@ -392,7 +399,7 @@ def fingerprint_writepdb(
         return u
 
     # create output directory to store generated PDBs
-    OUTDIR = output_path / "interaction_pdbs"
+    OUTDIR = Path(output_path) / "interaction_pdbs"
     OUTDIR.mkdir(exist_ok=True, parents=True)
 
     # set selection strings
@@ -404,6 +411,8 @@ def fingerprint_writepdb(
     systems = {interaction: None for interaction in list(fingerprint_df)}
 
     for interaction_col in fingerprint_df:  # loop over interaction types
+
+        print(f"Analysing {interaction_col} interactions...")
 
         # create MDAnalysis.Universe
         u_int = _load_universe(structure._path)
@@ -437,32 +446,34 @@ def fingerprint_writepdb(
             str(OUTDIR / f"sys_int_{str(interaction_col)}.pdb")
         )
 
-    # sum interactions to get total number per residue
-    fingerprint_df_sum = fingerprint_df.T.sum()
+    if summed:
 
-    u_summed = _load_universe(structure._path)
-    u_summed.add_TopologyAttr("tempfactors")
-    sys_summed = u_summed.select_atoms(sel_string)
+        # sum interactions to get total number per residue
+        fingerprint_df_sum = fingerprint_df.T.sum()
 
-    for resid, summed_ints in fingerprint_df_sum.iteritems():
+        u_summed = _load_universe(structure._path)
+        u_summed.add_TopologyAttr("tempfactors")
+        sys_summed = u_summed.select_atoms(sel_string)
 
-        sel_summed = sys_summed.select_atoms(f"resid {str(resid)}")
-        sel_summed.atoms.tempfactors = summed_ints
+        for resid, summed_ints in fingerprint_df_sum.iteritems():
 
-    # write out new pdb for total interactions
-    try:
-        with mda.Writer(
-            OUTDIR / f"sys_summed_interactions.pdb", sys_summed.n_atoms
-        ) as W:
-            W.write(sys_summed)
-    except:
-        print("Warning! Couldn't write sys_summed_interactions.pdb")
-    else:
-        print(f"Written sys_summed_interactions.pdb to {OUTDIR}")
+            sel_summed = sys_summed.select_atoms(f"resid {str(resid)}")
+            sel_summed.atoms.tempfactors = summed_ints
 
-    systems["summed_interactions"] = Structure.from_pdbfile(
-        str(OUTDIR / f"sys_summed_interactions.pdb")
-    )
+        # write out new pdb for total interactions
+        try:
+            with mda.Writer(
+                OUTDIR / f"sys_summed_interactions.pdb", sys_summed.n_atoms
+            ) as W:
+                W.write(sys_summed)
+        except:
+            print("Warning! Couldn't write sys_summed_interactions.pdb")
+        else:
+            print(f"Written sys_summed_interactions.pdb to {OUTDIR}")
+
+        systems["summed_interactions"] = Structure.from_pdbfile(
+            str(OUTDIR / f"sys_summed_interactions.pdb")
+        )
 
     return systems
 
@@ -471,12 +482,20 @@ class VisPymol(object):
     """
     A series of tools to create publication ready images using PyMol
 
+    Example usage:
+
+    v = VisPymol(pdb=pdb_file.pdb)
+    v.load()
+    v.set_style()
+    v.create_image(surface=True, ligand_col="green", spectrum_col="white_pink")
+    v.render(name="example")
+
     Parameters
     ----------
     pdb : str
        Path to PDB file to load e.g. plipify.core.Structure._path
     ligand_interactions: bool
-        Specify whether to highlight residues in contact with the ligand.
+        Specify whether to highlight residues in contact with the ligand, default = True.
         This requires a pdb file with bfactor values > 0
         e.g. from plipify.visualization.fingerprint_writepdb
     """
@@ -504,6 +523,7 @@ class VisPymol(object):
             raise FileNotFoundError(f"{self._pdb} not found")
 
         # Rename objects
+        # NOTE not sure this step is needed
         name = os.path.splitext(os.path.basename(self._pdb))[0]
         cmd.set_name(name, "system")
 
@@ -523,6 +543,7 @@ class VisPymol(object):
         antialias: int = 1,
         ortho: int = 1,
         ray_trace_mode: int = 0,
+        flat_sheets: int = 1, 
     ):
 
         """
@@ -544,6 +565,8 @@ class VisPymol(object):
             Specify whether to use an orthographic view (0 = off, 1 = on), default = 1
         ray_trace_mode : int
             Control in-built PyMol ray trace mode (0-3), default = 0
+        flat_sheets: int
+            Specify whether beta sheets should be artistically flattened (set to 0 to follow backbone), default = 1
         """
 
         # Add filter (ambient) and other misc settings
@@ -556,6 +579,9 @@ class VisPymol(object):
         cmd.set("antialias", antialias)
         cmd.set("ortho", ortho)
         cmd.set("ray_trace_mode", ray_trace_mode)
+
+        # Set the beta sheet style
+        cmd.set("cartoon_flat_sheets", flat_sheets)
 
     def create_image(
         self,
@@ -658,7 +684,13 @@ class VisPymol(object):
             else:
                 cmd.show(
                     highlight_style,
-                    "prot and not name N and not name C and not name O and not hydrogen and b > 0",
+                    "not resn PRO and prot and not name N and not name C and not name O and not hydrogen and b > 0",
+                )
+                # Handle Proline
+                cmd.show(
+                    highlight_style,
+                    "resn PRO and not name C and not name O and not hydrogen and b > 0"
+
                 )
 
         # Show the whole protein
