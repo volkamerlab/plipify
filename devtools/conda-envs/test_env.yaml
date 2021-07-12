@@ -3,6 +3,7 @@ channels:
   - conda-forge
   - bioconda
   - defaults
+  - schrodinger
 dependencies:
   # Base depends
   - python < 3.9
@@ -27,6 +28,7 @@ dependencies:
   - bravado
   - biopandas
   - biotite
+  - pymol
   # alignment
   - muscle
   # Testing
