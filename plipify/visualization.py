@@ -600,6 +600,7 @@ class VisPymol(object):
         ligand_col: str = "cyan",
         cnc_protein: bool = False,
         cnc_ligand: bool = True,
+        view: str = "ligand",
         viewport_x: int = 720,
         viewport_y: int = 720,
     ):
@@ -639,6 +640,8 @@ class VisPymol(object):
             Specify whether to only colour Carbon atoms in the protein, default = False
         cnc_ligand : bool
             Specify whether to only colour Carbon atoms in the ligand, default = True
+        view: str
+            Specify where to centre the camera on, can take "ligand" to centre on supplied ligand or the output from PyMol "get_view" command, default = "ligand"
         viewport_x : int
             Set the viewport dimensions in x, default = 720
         viewport_y : int
@@ -685,14 +688,16 @@ class VisPymol(object):
             if show_backbone:
                 cmd.show(highlight_style, "prot and not hydrogen and b > 0")
             else:
+                cmd.select("hotspots","not resn PRO and prot and not name N and not name C and not name O and not hydrogen and b > 0")
+                cmd.select("hotspots_pro", "resn PRO and not name C and not name O and not hydrogen and b > 0")
                 cmd.show(
                     highlight_style,
-                    "not resn PRO and prot and not name N and not name C and not name O and not hydrogen and b > 0",
+                    "hotspots",
                 )
                 # Handle Proline
                 cmd.show(
                     highlight_style,
-                    "resn PRO and not name C and not name O and not hydrogen and b > 0",
+                    "hotspots_pro",
                 )
 
         # Show the whole protein
@@ -724,16 +729,18 @@ class VisPymol(object):
         print("Setting PyMol view...")
         cmd.viewport(self._viewport_x, self._viewport_y)
 
-        # TODO remove hardcoded view - this is currently set for MPro
-        cmd.set_view(
-            "\
-            -0.665904999,   -0.394821048,   -0.632996082,\
-            0.296537369,   -0.918650806,    0.261042088,\
-            -0.684570849,   -0.013875127,    0.728814185,\
-            0.000000000,    0.000000000,  -95.144737244,\
-            8.413966179,   -0.994599819,   22.830898285,\
-            56.102233887,  134.187240601,   20.000000000 "
-        )
+        if view == "ligand":
+            print("Focussing view on ligand and binding site")
+            cmd.center("ligand or hotspots or hotspots_pro")
+            cmd.zoom("ligand or hotspots or hotspots_pro", 5)
+        
+        else:
+            try:
+                cmd.set_view(f"{view}")
+                print("Focussing view on user-supplied coordinates")
+            except:
+                print("Couldn't parse supplied view!")
+
 
     def render(self, name, save_path="./", dpi=300):
 
