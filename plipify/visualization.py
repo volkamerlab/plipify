@@ -590,6 +590,7 @@ class VisPymol(object):
         spectrum_col: str = "white_green",
         surface: bool = False,
         surface_mode: int = 3,
+        surface_col: str = "white",
         transparency: float = 0.75,
         protein_style: str = "cartoon",
         protein_col: str = "white",
@@ -618,6 +619,8 @@ class VisPymol(object):
             Specify whether to show the protein surface, default = False
         surface_mode : int
             Set what atoms are used to specify the surface (0-2), default = 3
+        surface_col : str
+            Set the colour of the protein surface, default = "white"
         transparency : float
             Set the transparency of the surface if specified, default = 0.75
         protein_style : str
@@ -704,15 +707,18 @@ class VisPymol(object):
             cmd.show(ligand_style, "ligand and not hydrogen")
             if cnc_ligand:
                 util.cnc("ligand")
+        
+        # Colour only Carbon atoms, if specified
+        if cnc_protein:
+            util.cnc("prot")
 
         # Add a protein surface, if specified
         if surface:
             cmd.set("surface_mode", surface_mode)
             cmd.set("transparency", transparency)
+            cmd.set("surface_color", surface_col)
 
-        # Colour only Carbon atoms, if specified
-        if cnc_protein:
-            util.cnc("prot")
+            cmd.set("transparency", 0.75, "b>0")
 
         # Set the viewport and view
         print("Setting PyMol view...")
