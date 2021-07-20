@@ -505,14 +505,9 @@ class VisPymol(object):
         self._pdb = pdb
         self._ligand_interactions = ligand_interactions
 
-    def load(self):
-        """
-        Load a pdb file into a PyMol session
-        """
-
         # Launch pymol session
         print("Launching PyMol session...")
-        pymol.pymol_argv = ["pymol", "-qc"] #+ sys.argv[1:]
+        pymol.pymol_argv = ["pymol", "-qc"]  # + sys.argv[1:]
         pymol.finish_launching()
 
         # Load file
@@ -688,8 +683,14 @@ class VisPymol(object):
             if show_backbone:
                 cmd.show(highlight_style, "prot and not hydrogen and b > 0")
             else:
-                cmd.select("hotspots","not resn PRO and prot and not name N and not name C and not name O and not hydrogen and b > 0")
-                cmd.select("hotspots_pro", "resn PRO and not name C and not name O and not hydrogen and b > 0")
+                cmd.select(
+                    "hotspots",
+                    "not resn PRO and prot and not name N and not name C and not name O and not hydrogen and b > 0",
+                )
+                cmd.select(
+                    "hotspots_pro",
+                    "resn PRO and not name C and not name O and not hydrogen and b > 0",
+                )
                 cmd.show(
                     highlight_style,
                     "hotspots",
@@ -712,7 +713,7 @@ class VisPymol(object):
             cmd.show(ligand_style, "ligand and not hydrogen")
             if cnc_ligand:
                 util.cnc("ligand")
-        
+
         # Colour only Carbon atoms, if specified
         if cnc_protein:
             util.cnc("prot")
@@ -733,14 +734,13 @@ class VisPymol(object):
             print("Focussing view on ligand and binding site")
             cmd.center("ligand or hotspots or hotspots_pro")
             cmd.zoom("ligand or hotspots or hotspots_pro", 5)
-        
+
         else:
             try:
                 cmd.set_view(f"{view}")
                 print("Focussing view on user-supplied coordinates")
             except:
                 print("Couldn't parse supplied view!")
-
 
     def render(self, name, save_path="./", dpi=300):
 
