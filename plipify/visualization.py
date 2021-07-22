@@ -22,17 +22,15 @@ from pymol import cmd, util, sys
 from plipify.core import Structure
 
 INTERACTION_PALETTE = {
-    "hbond-don": "#22bbff",
-    "hbond-donor": "#22bbff",
-    "hbond-acc": "#33ccff",
-    "hbond-acceptor": "#33ccff",
-    "hydrophobic": "#ff6699",
-    "waterbridge": "#4d4dff",
-    "saltbridge": "#ff3300",
-    "pistacking": "#00cc7a",
-    "pication": "#cc66ff",
-    "halogen": "#ace600",
-    "metal": "#ff9933",
+    "hbond-don": "#0173b2",
+    "hbond-acc": "#de8f05",
+    "hydrophobic": "#029e73",
+    "waterbridge": "#d55e00",
+    "saltbridge": "#cc78bc",
+    "pistacking": "#ca9161",
+    "pication": "#fbafe4",
+    "halogen": "#949494",
+    "metal": "#ece133",
 }
 
 
@@ -102,6 +100,7 @@ def _prepare_tabledata(fingerprint_df):
     residues : list of str
         List of residue string representations
     """
+
     residues = list(fingerprint_df.index)
     interaction_types = list(fingerprint_df.columns)
     fingerprint = fingerprint_df.values.tolist()
@@ -112,6 +111,7 @@ def _prepare_tabledata(fingerprint_df):
 
 
 _TABLE_CSS = """
+
     table.plipify-legend {
         text-align: center;
         color: #fff;
@@ -119,17 +119,27 @@ _TABLE_CSS = """
 
     table.plipify-legend td {
         padding: 3px;
+        border: 3px solid white;
     }
+
     table.plipify-interactions {
-        border: 1px solid #9698ed;
+        border: 1px solid black;
         text-align: center;
-        color: #fff;
+        color: white;
         font-weight: bold;
     }
 
     table.plipify-interactions th {
-        background-color: #9698ed;
+        text-align: center;
+        background-color: #005473;
         padding: 3px;
+        border-right: 1px solid black;
+        border-left: 1px solid black;
+    }
+
+    table.plipify-interactions tr {
+        text-align: center;
+        background-color: white;
     }
 
     .plipify-ttooltip {
@@ -173,15 +183,36 @@ _TABLE_CSS = """
     """
 
 
-def fingerprint_table(fingerprint_df, as_widget=True):
+def fingerprint_table(fingerprint_df, as_widget=True, structure=None):
     """
     Create HTML and CSS table layout for the calculated fingerprint.
 
     Parameters
     ----------
-    fp_data = fingerpint in dataframe form
-    as_widget = whether to build a IPyWidget object or just return the HTML string
+    fingerprint_df : pd.DataFrame
+        Fingerpint in dataframe form
+    as_widget: bool
+        Whether to build a IPyWidget object or just return the HTML string
+    structure : plipify.core.Structure
+        If supplied, will use this to generate residue labels in the form A123 etc
+
     """
+
+    # if a structure is supplied, get one-letter residues e.g. H163
+    ol_residues = None
+
+    if structure:
+        try:
+            fingerprint_df.attrs["residues"] = {
+                r.seq_index: f"{structure.residues[i].one_letter_code}{r.seq_index}"
+                for i, r in enumerate(structure.residues)
+            }
+
+            ol_residues = fingerprint_df.attrs["residues"]
+
+        except AttributeError:
+            print("Supplied structure argument is not a plipify.core.Structure object!")
+
     fingerprint, interaction_index, residues = _prepare_tabledata(fingerprint_df)
 
     html = f"""
@@ -193,7 +224,10 @@ def fingerprint_table(fingerprint_df, as_widget=True):
         <tr>
     """
     for key in INTERACTION_PALETTE:
-        html += f'<td style="background-color:{INTERACTION_PALETTE[key]}">{key}</td>'
+        if key in fingerprint_df.columns.to_list():
+            html += (
+                f'<td style="background-color:{INTERACTION_PALETTE[key]}">{key}</td>'
+            )
 
     html += """
         </tr>
@@ -204,6 +238,9 @@ def fingerprint_table(fingerprint_df, as_widget=True):
     """
 
     for residue in residues:
+        if ol_residues and residue in ol_residues:
+            residue = ol_residues[residue]
+
         html += f"<th>{residue}</th>"
     html += "</tr><tr>"
 
@@ -215,7 +252,7 @@ def fingerprint_table(fingerprint_df, as_widget=True):
         """
         for bit in residue_fp:
             if bit == 0:  # no interactions reported at this position
-                html += "<td></td>"
+                continue
             else:
                 interaction_type = interaction_index[fp_index]
                 interaction_colour = INTERACTION_PALETTE[interaction_type]
@@ -485,7 +522,6 @@ class VisPymol(object):
     Example usage:
 
     v = VisPymol(pdb=pdb_file.pdb)
-    v.load()
     v.set_style()
     v.create_image(surface=True, ligand_col="green", spectrum_col="white_pink")
     v.render(name="example")
