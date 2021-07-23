@@ -17,7 +17,7 @@ import MDAnalysis as mda
 import plotly.graph_objects as go
 import pymol
 import seaborn as sns
-from pymol import cmd, util, sys
+from pymol import cmd, util
 
 from plipify.core import Structure
 
@@ -543,7 +543,7 @@ class VisPymol(object):
 
         # Launch pymol session
         print("Launching PyMol session...")
-        pymol.pymol_argv = ["pymol", "-qc"]  # + sys.argv[1:]
+        pymol.pymol_argv = ["pymol", "-qc"]
         pymol.finish_launching()
 
         # Load file
@@ -772,10 +772,10 @@ class VisPymol(object):
             cmd.zoom("ligand or hotspots or hotspots_pro", 5)
 
         else:
-            try:
+            if len(view.split()) == 18:
                 cmd.set_view(f"{view}")
                 print("Focussing view on user-supplied coordinates")
-            except:
+            else:
                 print("Couldn't parse supplied view!")
 
     def render(self, name, save_path="./", dpi=300):
