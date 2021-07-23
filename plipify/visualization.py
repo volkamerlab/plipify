@@ -252,6 +252,7 @@ def fingerprint_table(fingerprint_df, as_widget=True, structure=None):
         """
         for bit in residue_fp:
             if bit == 0:  # no interactions reported at this position
+                fp_index += 1
                 continue
             else:
                 interaction_type = interaction_index[fp_index]
@@ -681,6 +682,17 @@ class VisPymol(object):
 
         self._viewport_x = viewport_x
         self._viewport_y = viewport_y
+
+        # Set colours
+        cmd.set_color("cborange", [0.8706, 0.5608, 0.0196])
+        cmd.set_color("cbpurple", [0.66, 0.35, 0.63])
+        cmd.set_color("cblight_blue", [0.52, 0.75, 0.98])
+        cmd.set_color("cbgreen", [0.0078, 0.6196, 0.4510])
+        cmd.set_color("cbblue", [0.0039, 0.4510, 0.6980])
+        cmd.set_color("cbred", [0.8353, 0.3686, 0])
+        cmd.set_color("cbbrown", [0.7921, 0.5686, 0.3804])
+        cmd.set_color("cbgrey", [0.5804, 0.5804, 0.5804])
+        cmd.set_color("cbgray", [0.5804, 0.5804, 0.5804])
 
         # Set colour dictionary
         c_dict = {
