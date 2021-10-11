@@ -811,6 +811,7 @@ class VisPymol(object):
 
         # Create image
         print("Rendering PyMol image...")
+        cmd.set("ray_transparency_contrast",3.0)
         cmd.ray(self._viewport_x, self._viewport_y)
         filename = str(d / f"{name}.png")
         cmd.png(filename, dpi=dpi)
