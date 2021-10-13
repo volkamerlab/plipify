@@ -402,6 +402,54 @@ def fingerprint_nglview(fingerprint_df, structure, fp_index_to_residue_id=None):
     return view
 
 
+def nglview_color_side_chains_by_frequency(fp_focused, selected_structure_pdb, ligand="LIG"):
+    """
+    Adapted from this [gist](https://gist.github.com/dominiquesydow/1aa19cc5583a31bfbd58bc8a066a7705)
+    by Dominique Sydow.
+    """
+    import nglview as nv
+    from matplotlib import cm, colors
+
+    # add sum column
+    fp_color = fp_focused.copy()
+    fp_color["sum"] = fp_color.sum(axis=1)
+    # prepare color maps
+    max_n_interactions = fp_color["sum"].max()
+    max_n_interactions
+    cmap = cm.get_cmap("Reds", max_n_interactions)
+    # get residue-color map
+    # NGLview needs color as hex code
+    fp_color["color"] = fp_color["sum"].apply(lambda x: colors.rgb2hex(cmap(x)))
+    # NGLview needs residue IDs as str
+    fp_color["residue_id_str"] = fp_color.index.astype(str)
+    # convert to list as needed by nglview colorscheme
+    color_residue_map = fp_color[["color", "residue_id_str"]].to_numpy().tolist()
+    color_scheme = nv.color._ColorScheme(color_residue_map, label="#interactions")
+
+    #nglview
+    view = nv.NGLWidget()
+    structure = nv.adaptor.FileStructure(str(selected_structure_pdb))
+    view.add_component(structure, default_representation=False)
+
+    view.add_representation(
+        "cartoon",
+        selection="protein",
+        color=color_scheme,
+    )
+
+    # add selected side chains
+    residue_list = fp_color["residue_id_str"].tolist()
+    view.add_representation(
+        'licorice',
+        selection=f"protein and ({' '.join([str(x) for x in residue_list])})",
+        color=color_scheme,
+    )
+
+    view.add_ball_and_stick(ligand)
+    view.center(ligand)
+    return view
+
+
 def fingerprint_writepdb(
     fingerprint_df,
     structure,
@@ -409,6 +457,7 @@ def fingerprint_writepdb(
     ligand=False,
     ligand_name="LIG",
     summed=False,
+    verbose=True,
 ) -> dict:
     """
     Write interaction hotspots to a PDB file
@@ -425,7 +474,8 @@ def fingerprint_writepdb(
         The name of the bound ligand
     summed : bool
         Specify whether to write out summed interaction PDB, default = False
-
+    verbose : bool
+        Print some information as we process files or not, default = True
     Returns
     -------
     systems: dict[str: plipify.core.Structure]
@@ -450,7 +500,8 @@ def fingerprint_writepdb(
 
     for interaction_col in fingerprint_df:  # loop over interaction types
 
-        print(f"Analysing {interaction_col} interactions...")
+        if verbose:
+            print(f"Analysing {interaction_col} interactions...")
 
         # create MDAnalysis.Universe
         u_int = _load_universe(structure._path)
@@ -478,7 +529,8 @@ def fingerprint_writepdb(
             print(f"Warning! Couldn't write sys_int_{str(interaction_col)}.pdb")
             continue
         else:
-            print(f"Written sys_int_{str(interaction_col)}.pdb to {OUTDIR}")
+            if verbose:
+                print(f"Written sys_int_{str(interaction_col)}.pdb to {OUTDIR}")
 
         systems[interaction_col] = Structure.from_pdbfile(
             str(OUTDIR / f"sys_int_{str(interaction_col)}.pdb")
@@ -507,7 +559,8 @@ def fingerprint_writepdb(
         except TypeError:
             print("Warning! Couldn't write sys_summed_interactions.pdb")
         else:
-            print(f"Written sys_summed_interactions.pdb to {OUTDIR}")
+            if verbose:
+                print(f"Written sys_summed_interactions.pdb to {OUTDIR}")
 
         systems["summed_interactions"] = Structure.from_pdbfile(
             str(OUTDIR / "sys_summed_interactions.pdb")
@@ -516,13 +569,13 @@ def fingerprint_writepdb(
     return systems
 
 
-class VisPymol(object):
+class PymolVisualizer(object):
     """
     A series of tools to create publication ready images using PyMol
 
     Example usage:
 
-    v = VisPymol(pdb=pdb_file.pdb)
+    v = PymolVisualizer(pdb=pdb_file.pdb)
     v.set_style()
     v.create_image(surface=True, ligand_col="green", spectrum_col="white_pink")
     v.render(name="example")
@@ -537,18 +590,21 @@ class VisPymol(object):
         e.g. from plipify.visualization.fingerprint_writepdb
     """
 
-    def __init__(self, pdb: str, ligand_interactions: bool = True):
+    def __init__(self, pdb: str, ligand_interactions: bool = True, verbose: bool = True):
 
         self._pdb = pdb
         self._ligand_interactions = ligand_interactions
+        self._verbose = verbose
 
         # Launch pymol session
-        print("Launching PyMol session...")
+        if self._verbose:
+            print("Launching PyMol session...")
         pymol.pymol_argv = ["pymol", "-qc"]
         pymol.finish_launching()
 
         # Load file
-        print("Loading supplied PDB file...")
+        if self._verbose:
+            print("Loading supplied PDB file...")
         if os.path.exists(self._pdb):
             cmd.load(self._pdb)
         else:
@@ -726,7 +782,8 @@ class VisPymol(object):
 
         # Colour protein residues based on bfactor value, if specified
         if self._ligand_interactions:
-            print("Highlighting ligand interaction sites...")
+            if self._verbose:
+                print("Highlighting ligand interaction sites...")
             cmd.spectrum("b", spectrum_col, "prot")
             if show_backbone:
                 cmd.show(highlight_style, "prot and not hydrogen and b > 0")
@@ -775,20 +832,24 @@ class VisPymol(object):
             cmd.set("transparency", 0.75, "b>0")
 
         # Set the viewport and view
-        print("Setting PyMol view...")
+        if self._verbose:
+            print("Setting PyMol view...")
         cmd.viewport(self._viewport_x, self._viewport_y)
 
         if view == "ligand":
-            print("Focussing view on ligand and binding site")
+            if self._verbose:
+                print("Focussing view on ligand and binding site")
             cmd.center("ligand or hotspots or hotspots_pro")
             cmd.zoom("ligand or hotspots or hotspots_pro", 5)
 
         else:
             if len(view.split()) == 18:
                 cmd.set_view(f"{view}")
-                print("Focussing view on user-supplied coordinates")
+                if self._verbose:
+                    print("Focussing view on user-supplied coordinates")
             else:
-                print("Couldn't parse supplied view!")
+                if self._verbose:
+                    print("Couldn't parse supplied view!")
 
     def render(self, name, save_path="./", dpi=300):
 
@@ -810,9 +871,11 @@ class VisPymol(object):
         d.mkdir(exist_ok=True, parents=True)
 
         # Create image
-        print("Rendering PyMol image...")
+        if self._verbose:
+            print("Rendering PyMol image...")
         cmd.set("ray_transparency_contrast",3.0)
         cmd.ray(self._viewport_x, self._viewport_y)
         filename = str(d / f"{name}.png")
         cmd.png(filename, dpi=dpi)
-        print(f"Image created! Saving to {filename}")
+        if self._verbose:
+            print(f"Image created! Saving to {filename}")
