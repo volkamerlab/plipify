@@ -2,7 +2,7 @@ name: test
 channels:
   - conda-forge
   - bioconda
-  - defaults
+  - schrodinger
 dependencies:
   # Base depends
   - python < 3.9
@@ -27,6 +27,7 @@ dependencies:
   - bravado
   - biopandas
   - biotite
+  - pymol-bundle
   # alignment
   - muscle
   # Testing
@@ -35,6 +36,6 @@ dependencies:
   # Dev
   - black
   - pip:
-    - https://github.com/volkamerlab/opencadd/archive/master.tar.gz
+      - https://github.com/volkamerlab/opencadd/archive/master.tar.gz
 ## For nglview and other widgets, run:
 # jupyter labextension install plotlywidget jupyterlab-plotly
