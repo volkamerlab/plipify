@@ -225,9 +225,7 @@ def fingerprint_table(fingerprint_df, as_widget=True, structure=None):
     """
     for key in INTERACTION_PALETTE:
         if key in fingerprint_df.columns.to_list():
-            html += (
-                f'<td style="background-color:{INTERACTION_PALETTE[key]}">{key}</td>'
-            )
+            html += f'<td style="background-color:{INTERACTION_PALETTE[key]}">{key}</td>'
 
     html += """
         </tr>
@@ -305,9 +303,7 @@ def fingerprint_nglview(fingerprint_df, structure, fp_index_to_residue_id=None):
     selection, selection_ons = [], []
     tooltips = {}
     for resid, row in fingerprint_df.iterrows():
-        values = sorted(
-            zip(fingerprint_df.columns, row), key=lambda kv: kv[1], reverse=True
-        )
+        values = sorted(zip(fingerprint_df.columns, row), key=lambda kv: kv[1], reverse=True)
         if fp_index_to_residue_id is not None:
             residue = structure.get_residue_by(**fp_index_to_residue_id[resid])
             if residue:
@@ -321,17 +317,13 @@ def fingerprint_nglview(fingerprint_df, structure, fp_index_to_residue_id=None):
                 )
                 continue
 
-        tooltips[resid] = ", ".join(
-            [f"{val}x{col.title()}" for (col, val) in values if val]
-        )
+        tooltips[resid] = ", ".join([f"{val}x{col.title()}" for (col, val) in values if val])
 
         # Display interacting residues
         selection.append(f"({resid} and not _H)")
         selection_ons.append(f"({resid} and ((_O) or (_N) or (_S)))")
 
-    view.add_ball_and_stick(
-        sele=" or ".join(selection), colorScheme="chainindex", aspectRatio=1.5
-    )
+    view.add_ball_and_stick(sele=" or ".join(selection), colorScheme="chainindex", aspectRatio=1.5)
     view.add_ball_and_stick(
         sele=" or ".join(selection_ons), colorScheme="element", aspectRatio=1.5
     )
@@ -426,7 +418,7 @@ def nglview_color_side_chains_by_frequency(fp_focused, selected_structure_pdb, l
     color_residue_map = fp_color[["color", "residue_id_str"]].to_numpy().tolist()
     color_scheme = nv.color._ColorScheme(color_residue_map, label="#interactions")
 
-    #nglview
+    # nglview
     view = nv.NGLWidget()
     structure = nv.adaptor.FileStructure(str(selected_structure_pdb))
     view.add_component(structure, default_representation=False)
@@ -440,7 +432,7 @@ def nglview_color_side_chains_by_frequency(fp_focused, selected_structure_pdb, l
     # add selected side chains
     residue_list = fp_color["residue_id_str"].tolist()
     view.add_representation(
-        'licorice',
+        "licorice",
         selection=f"protein and ({' '.join([str(x) for x in residue_list])})",
         color=color_scheme,
     )
@@ -511,9 +503,7 @@ def fingerprint_writepdb(
 
         sys_int = u_int.select_atoms(sel_string)
 
-        for resid, value in fingerprint_df[
-            interaction_col
-        ].iteritems():  # loop over residues
+        for resid, value in fingerprint_df[interaction_col].iteritems():  # loop over residues
 
             # assign temperature facture value based on interaction value
             sel = sys_int.select_atoms(f"resid {str(resid)}")
@@ -521,9 +511,7 @@ def fingerprint_writepdb(
 
         # write out new pdb for interaction type
         try:
-            with mda.Writer(
-                OUTDIR / f"sys_int_{str(interaction_col)}.pdb", sys_int.n_atoms
-            ) as W:
+            with mda.Writer(OUTDIR / f"sys_int_{str(interaction_col)}.pdb", sys_int.n_atoms) as W:
                 W.write(sys_int)
         except TypeError:
             print(f"Warning! Couldn't write sys_int_{str(interaction_col)}.pdb")
@@ -552,9 +540,7 @@ def fingerprint_writepdb(
 
         # write out new pdb for total interactions
         try:
-            with mda.Writer(
-                OUTDIR / "sys_summed_interactions.pdb", sys_summed.n_atoms
-            ) as W:
+            with mda.Writer(OUTDIR / "sys_summed_interactions.pdb", sys_summed.n_atoms) as W:
                 W.write(sys_summed)
         except TypeError:
             print("Warning! Couldn't write sys_summed_interactions.pdb")
@@ -873,7 +859,7 @@ class PymolVisualizer(object):
         # Create image
         if self._verbose:
             print("Rendering PyMol image...")
-        cmd.set("ray_transparency_contrast",3.0)
+        cmd.set("ray_transparency_contrast", 3.0)
         cmd.ray(self._viewport_x, self._viewport_y)
         filename = str(d / f"{name}.png")
         cmd.png(filename, dpi=dpi)
