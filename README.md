@@ -1,5 +1,6 @@
-PLIPify: Protein-ligand interaction frequencies across multiple structures
+PLIPify: Protein-Ligand Interaction Frequencies across Multiple Structures
 ==============================
+[![Actions Status](https://github.com/volkamerlab/plipify/workflows/CI/badge.svg)](https://github.com/volkamerlab/plipify/actions)
 
 _Powered by: [Volkamer lab](http://volkamerlab.org/)_
 
@@ -11,7 +12,7 @@ Protein-ligand interactions are an essential part of research in structural bioi
 Tools such as the Protein-Ligand Interaction Profiler ([PLIP](https://plip-tool.biotec.tu-dresden.de/plip-web/plip/index)) enable us to get detailed interaction profiles for single structures. However, combining this data for multiple structures of a protein to identify possible interaction hotspots across them, e.g. when bound to different ligands, remains difficult.
 The aim of `plipify` is to create and visualize a fingerprint that represents the protein-ligand interaction frequencies over multiple structures of the same protein.
 
-Note that full credits for protein-ligand profile computation goes to [PLIP](https://plip-tool.biotec.tu-dresden.de/plip-web/plip/index) [1]. `plipify` provides a wrapper around PLIP, which allows to digest multiple structures at once, performs the mapping of the individual profiles to fingerprints and reports protein-ligand interaction frequencies.
+Note that full credits for protein-ligand profile computation go to [PLIP](https://plip-tool.biotec.tu-dresden.de/plip-web/plip/index) [1]. `plipify` provides a wrapper around PLIP, which allows to digest multiple structures at once, performs the mapping of the individual profiles to fingerprints and reports protein-ligand interaction frequencies.
 
 > [1] Salentin, S. et al. [PLIP: fully automated protein-ligand interaction profiler](https://academic.oup.com/nar/article/43/W1/W443/2467865). Nucl. Acids Res., 2015, 43 (W1): W443-W447.
 
