@@ -1,4 +1,4 @@
-name: test
+name: plipify
 channels:
   - conda-forge
   - bioconda
