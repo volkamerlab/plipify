@@ -11,7 +11,6 @@ from collections import defaultdict, Counter
 from tempfile import TemporaryDirectory
 from pathlib import Path
 import subprocess
-from Bio.Align.Applications import MuscleCommandline
 
 import numpy as np
 import pandas as pd
