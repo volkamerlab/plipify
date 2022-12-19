@@ -10,11 +10,12 @@ an interaction fingerprint.
 from collections import defaultdict, Counter
 from tempfile import TemporaryDirectory
 from pathlib import Path
+import subprocess
+from Bio.Align.Applications import MuscleCommandline
 
 import numpy as np
 import pandas as pd
 from Bio.AlignIO.FastaIO import MultipleSeqAlignment, Seq, SeqRecord
-from Bio.Align.Applications import MuscleCommandline
 from Bio.AlignIO import write as write_alignment, read as read_alignment
 
 from .core import ProteinResidue
@@ -244,8 +245,7 @@ class InteractionFingerprint:
             outfile = str(tmp / "out.fasta")
             logfile = str(tmp / "log.txt")
             write_alignment(unaligned, infile, "fasta")
-            cli = MuscleCommandline(input=infile, out=outfile, diags=True, maxiters=5, log=logfile)
-            cli()
+            subprocess.run(['muscle', '-align', infile, '-output', outfile, '-log', logfile])
             aligned = read_alignment(outfile, "fasta")
 
         offset = unaligned.get_alignment_length() - aligned.get_alignment_length()
