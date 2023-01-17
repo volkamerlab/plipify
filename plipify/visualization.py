@@ -28,13 +28,13 @@ INTERACTION_PALETTE = {
     "hbond-don-sc": "#08C1C9",
     "hbond-acc-bb": "#de8f05",
     "hbond-acc-sc": "#F57B07",
-    "hydrophobic": "#029e73",
     "waterbridge": "#d55e00",
     "saltbridge": "#cc78bc",
     "pistacking": "#ca9161",
     "pication": "#fbafe4",
     "halogen": "#949494",
     "metal": "#ece133",
+    "hydrophobic": "#029e73",
 }
 
 def fingerprint_barplot(fingerprint_df):
@@ -105,7 +105,8 @@ def _prepare_tabledata(fingerprint_df):
     """
 
     residues = list(fingerprint_df.index)
-    interaction_types = list(fingerprint_df.columns)
+    ## so that the resulting table will be in the same order as the INTERACTION PALETTE
+    interaction_types = [int_type for int_type in INTERACTION_PALETTE.keys() if int_type in list(fingerprint_df.columns)]
     fingerprint = fingerprint_df.values.tolist()
     fp_id = range(len(residues) * len(interaction_types))  # all fp indices
     interaction_list = interaction_types * len(residues)
