@@ -6,8 +6,6 @@ Factories that take a Structure or multiple structures and produce
 an interaction fingerprint.
 
 """
-import pdb as pdb_debugger
-
 from collections import defaultdict, Counter
 from tempfile import TemporaryDirectory
 from pathlib import Path
@@ -56,7 +54,6 @@ class InteractionFingerprint:
         interaction_types = []
         for interaction in residue.interactions:
             int_type = interaction.shorthand
-            print(int_type)
             if int_type == 'hbond-don' or int_type == 'hbond-acc':
                 sidechain = interaction.interaction["SIDECHAIN"]
                 if sidechain:
@@ -131,16 +128,13 @@ class InteractionFingerprint:
             cumul_fp = self._acumulate_fingerprints(
                 fingerprints, ensure_same_sequence=ensure_same_sequence
             )
-            pdb_debugger.set_trace()
             if labeled and as_dataframe:
                 plotdata = defaultdict(list)
                 for entry in cumul_fp:
                     plotdata[entry.label["type"]].append(entry)
-                pdb_debugger.set_trace()
                 df = pd.DataFrame.from_dict(
                     {k: [x.value for x in v] for (k, v) in plotdata.items()}
                 )
-                pdb_debugger.set_trace()
                 df.index = residue_indices[0].keys()
                 # change to eliminate redundant transpose
                 if remove_non_interacting_residues:
