@@ -6,6 +6,7 @@ Factories that take a Structure or multiple structures and produce
 an interaction fingerprint.
 
 """
+import pdb as pdb_debugger
 
 from collections import defaultdict, Counter
 from tempfile import TemporaryDirectory
@@ -42,9 +43,29 @@ class InteractionFingerprint:
             "metal",
             "covalent",
         ),
+            split_backbone_sidechain_hbonds=False
     ):
         self.indices = None
+        self.split_backbone_sidechain_hbonds = split_backbone_sidechain_hbonds
         self.interaction_types = interaction_types
+
+    def count_interactions_with_hbond_split(self, residue):
+        """
+        The purpose of this function is to enable the split of sidechain and backbone hydrogen bonds
+        """
+        interaction_types = []
+        for interaction in residue.interactions:
+            int_type = interaction.shorthand
+            print(int_type)
+            if int_type == 'hbond-don' or int_type == 'hbond-acc':
+                sidechain = interaction.interaction["SIDECHAIN"]
+                if sidechain:
+                    int_type += '-sc'
+                else:
+                    int_type += '-bb'
+            interaction_types.append(int_type)
+        counter = Counter(interaction_types)
+        return counter
 
     def calculate_fingerprint(
         self,
@@ -86,7 +107,6 @@ class InteractionFingerprint:
         """
         if residue_indices is None:
             residue_indices = self.calculate_indices_mapping(structures)
-
         if len(structures) != len(residue_indices):
             raise ValueError(
                 f"Number of residue indices mappings ({len(residue_indices)}) "
@@ -111,13 +131,16 @@ class InteractionFingerprint:
             cumul_fp = self._acumulate_fingerprints(
                 fingerprints, ensure_same_sequence=ensure_same_sequence
             )
+            pdb_debugger.set_trace()
             if labeled and as_dataframe:
                 plotdata = defaultdict(list)
                 for entry in cumul_fp:
                     plotdata[entry.label["type"]].append(entry)
+                pdb_debugger.set_trace()
                 df = pd.DataFrame.from_dict(
                     {k: [x.value for x in v] for (k, v) in plotdata.items()}
                 )
+                pdb_debugger.set_trace()
                 df.index = residue_indices[0].keys()
                 # change to eliminate redundant transpose
                 if remove_non_interacting_residues:
@@ -192,7 +215,10 @@ class InteractionFingerprint:
         for index_kwargs in indices:
             residue = structure.get_residue_by(**index_kwargs)
             if residue:
-                counter = residue.count_interactions()
+                if self.split_backbone_sidechain_hbonds:
+                    counter = self.count_interactions_with_hbond_split(residue)
+                else:
+                    counter = residue.count_interactions()
             else:
                 # FIXME: This is a bit hacky. Let's see if we can
                 # come up with something more elegant.
@@ -237,7 +263,6 @@ class InteractionFingerprint:
         identifiers = [s.identifier for s in structures]
         records = [SeqRecord(Seq(s), id=i) for s, i in zip(sequences, identifiers)]
         unaligned = MultipleSeqAlignment(records)
-
         with TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             infile = str(tmp / "in.fasta")
