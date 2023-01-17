@@ -24,6 +24,10 @@ from plipify.core import Structure
 INTERACTION_PALETTE = {
     "hbond-don": "#0173b2",
     "hbond-acc": "#de8f05",
+    "hbond-don-bb": "#0173b2",
+    "hbond-don-sc": "#08C1C9",
+    "hbond-acc-bb": "#de8f05",
+    "hbond-acc-sc": "#F57B07",
     "hydrophobic": "#029e73",
     "waterbridge": "#d55e00",
     "saltbridge": "#cc78bc",
@@ -32,7 +36,6 @@ INTERACTION_PALETTE = {
     "halogen": "#949494",
     "metal": "#ece133",
 }
-
 
 def fingerprint_barplot(fingerprint_df):
     """
