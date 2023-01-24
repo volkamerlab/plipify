@@ -105,13 +105,19 @@ def _prepare_tabledata(fingerprint_df):
     """
 
     residues = list(fingerprint_df.index)
+
+    ## Reorder fingerprint_df columns to match the INTERACTION PALETTE
+    selected_interaction_palette = {int_type: values for int_type, values in INTERACTION_PALETTE.items() if
+                                    int_type in list(fingerprint_df.columns)}
+    fingerprint_df = fingerprint_df.reindex(columns=selected_interaction_palette.keys())
+
     ## so that the resulting table will be in the same order as the INTERACTION PALETTE
-    interaction_types = [int_type for int_type in INTERACTION_PALETTE.keys() if int_type in list(fingerprint_df.columns)]
+    interaction_types = list(fingerprint_df.columns)
     fingerprint = fingerprint_df.values.tolist()
     fp_id = range(len(residues) * len(interaction_types))  # all fp indices
     interaction_list = interaction_types * len(residues)
     interaction_index = dict(zip(fp_id, interaction_list))
-    return fingerprint, interaction_index, residues
+    return fingerprint_df, fingerprint, interaction_index, residues
 
 
 _TABLE_CSS = """
@@ -201,6 +207,7 @@ def fingerprint_table(fingerprint_df, as_widget=True, structure=None):
         If supplied, will use this to generate residue labels in the form A123 etc
 
     """
+    fingerprint_df, fingerprint, interaction_index, residues = _prepare_tabledata(fingerprint_df)
 
     # if a structure is supplied, get one-letter residues e.g. H163
     ol_residues = None
@@ -217,7 +224,7 @@ def fingerprint_table(fingerprint_df, as_widget=True, structure=None):
         except AttributeError:
             print("Supplied structure argument is not a plipify.core.Structure object!")
 
-    fingerprint, interaction_index, residues = _prepare_tabledata(fingerprint_df)
+
 
     html = f"""
     <style>
