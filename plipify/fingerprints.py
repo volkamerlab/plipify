@@ -6,15 +6,14 @@ Factories that take a Structure or multiple structures and produce
 an interaction fingerprint.
 
 """
-
 from collections import defaultdict, Counter
 from tempfile import TemporaryDirectory
 from pathlib import Path
+import subprocess
 
 import numpy as np
 import pandas as pd
 from Bio.AlignIO.FastaIO import MultipleSeqAlignment, Seq, SeqRecord
-from Bio.Align.Applications import MuscleCommandline
 from Bio.AlignIO import write as write_alignment, read as read_alignment
 
 from .core import ProteinResidue
@@ -42,9 +41,28 @@ class InteractionFingerprint:
             "metal",
             "covalent",
         ),
+            split_backbone_sidechain_hbonds=False
     ):
         self.indices = None
+        self.split_backbone_sidechain_hbonds = split_backbone_sidechain_hbonds
         self.interaction_types = interaction_types
+
+    def count_interactions_with_hbond_split(self, residue):
+        """
+        The purpose of this function is to enable the split of sidechain and backbone hydrogen bonds
+        """
+        interaction_types = []
+        for interaction in residue.interactions:
+            int_type = interaction.shorthand
+            if int_type == 'hbond-don' or int_type == 'hbond-acc':
+                sidechain = interaction.interaction["SIDECHAIN"]
+                if sidechain:
+                    int_type += '-sc'
+                else:
+                    int_type += '-bb'
+            interaction_types.append(int_type)
+        counter = Counter(interaction_types)
+        return counter
 
     def calculate_fingerprint(
         self,
@@ -86,7 +104,6 @@ class InteractionFingerprint:
         """
         if residue_indices is None:
             residue_indices = self.calculate_indices_mapping(structures)
-
         if len(structures) != len(residue_indices):
             raise ValueError(
                 f"Number of residue indices mappings ({len(residue_indices)}) "
@@ -192,7 +209,10 @@ class InteractionFingerprint:
         for index_kwargs in indices:
             residue = structure.get_residue_by(**index_kwargs)
             if residue:
-                counter = residue.count_interactions()
+                if self.split_backbone_sidechain_hbonds:
+                    counter = self.count_interactions_with_hbond_split(residue)
+                else:
+                    counter = residue.count_interactions()
             else:
                 # FIXME: This is a bit hacky. Let's see if we can
                 # come up with something more elegant.
@@ -237,15 +257,13 @@ class InteractionFingerprint:
         identifiers = [s.identifier for s in structures]
         records = [SeqRecord(Seq(s), id=i) for s, i in zip(sequences, identifiers)]
         unaligned = MultipleSeqAlignment(records)
-
         with TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             infile = str(tmp / "in.fasta")
             outfile = str(tmp / "out.fasta")
             logfile = str(tmp / "log.txt")
             write_alignment(unaligned, infile, "fasta")
-            cli = MuscleCommandline(input=infile, out=outfile, diags=True, maxiters=5, log=logfile)
-            cli()
+            subprocess.run(['muscle', '-align', infile, '-output', outfile, '-log', logfile])
             aligned = read_alignment(outfile, "fasta")
 
         offset = unaligned.get_alignment_length() - aligned.get_alignment_length()
