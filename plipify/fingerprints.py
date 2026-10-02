@@ -6,6 +6,7 @@ Factories that take a Structure or multiple structures and produce
 an interaction fingerprint.
 
 """
+import subprocess
 from collections import defaultdict, Counter
 from tempfile import TemporaryDirectory
 from pathlib import Path
