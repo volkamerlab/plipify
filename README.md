@@ -4,7 +4,20 @@ PLIPify: Protein-Ligand Interaction Frequencies across Multiple Structures
 
 _Powered by: [Volkamer lab](http://volkamerlab.org/)_
 
+`plipify` wraps the Protein-Ligand Interaction Profiler (PLIP) to analyze many structures of the same protein at once. It maps the individual interaction
+profiles onto a common residue numbering and reports per-residue interaction frequencies. 
+
 :construction_worker: **Note: This repo is still work-in-progress.**
+
+In **Project 01**, we apply it to the 400+ SARS-CoV-2 main protease (Mpro) fragment structures from the Diamond Light Source XChem screen to find common binding modes and interaction hotspots.
+
+👉 **Main file of interest:** [`projects/01/fragalysis.ipynb`](projects/01/fragalysis.ipynb)
+
+📄 **Publication:** Boby, M. L., Fearon, D., Ferla, M., Filep, M., Koekemoer, L., Robinson, M. C., Chodera, J. D., Lee, A. A., London, N., von Delft, A.,
+von Delft, F., et al. (COVID Moonshot Consortium). [Open science discovery of potent noncovalent SARS-CoV-2 main protease inhibitors](https://www.science.org/doi/10.1126/science.abo7201).
+*Science* **2023**, 382 (6671), eabo7201. DOI: 10.1126/science.abo7201
+(earlier version: [bioRxiv preprint](https://www.biorxiv.org/content/10.1101/2020.10.29.339317v3)).
+
 
 ### Background
 
@@ -27,7 +40,17 @@ A huge crowed sourcing campaign - the [COVID moonshot](https://postera.ai/moonsh
 
 Besides other structures-based attempts (see our [repo](https://github.com/volkamerlab/covid19-SBapproach)), we applied `plipify` to the set of available structures, to generate more insides about the common bindig modes.
 
-For more details, please see the [fragalysis.ipynb](https://github.com/volkamerlab/plipify/blob/master/projects/01/fragalysis.ipynb).
+For more details, please see the [`fragalysis.ipynb`](projects/01/fragalysis.ipynb).
+
+#### Data provenance
+
+The structures come from [Fragalysis](https://fragalysis.diamond.ac.uk/), the XChem crystallographic fragment screening platform at Diamond Light Source
+(see the [API documentation](https://fragalysis.diamond.ac.uk/api/?format=api)).
+The notebook uses the full Mpro dataset (`TARGET = "Mpro"`), downloaded as a zip file from: https://fragalysis.diamond.ac.uk/media/targets/Mpro.zip
+`projects/01/20220124_Mprodata.txt` is the list of files contained in this archive (one path per line, e.g. `data/Mpro/aligned/Mpro-P0008_0A/Mpro-P0008_0A_bound.pdb`), as downloaded on
+2022-01-24. 
+
+Fragalysis serves the current state of its database, so downloads made at a later date may contain additional or updated structures. The date above identifies the version of the data used in this analysis.
 
 ### Project 02/03
 
@@ -84,11 +107,13 @@ pip install -e .
 ```
 |-- LICENSE
 |-- README.md
-|-- devtools    <- environment file
-|-- plipify     <- plipify code
+|-- devtools                     <- conda environment files
+|-- plipify                      <- plipify Python package
 |-- projects
-|   |-- 01      <- One protein against many ligands
-|   |-- 02      <- One ligand against several targets
+|   |-- 01                       <- One protein against many ligands (Mpro)
+|   |   |-- fragalysis.ipynb     <- MAIN NOTEBOOK: runs plipify on the Mpro fragment structures
+|   |   |-- 20220124_Mprodata.txt <- Mpro structure metadata (see "Data provenance")
+|   |-- 02                       <- One ligand against several targets (WIP)
 ```
 
 ### Copyright
