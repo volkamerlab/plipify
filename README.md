@@ -98,7 +98,7 @@ pip install -e .
 * Methodology: Jaime Rodríguez-Guerra, Franziska Fritz, Andrea Volkamer
     * plipify nb: Franziska Fritz, Jaime Rodríguez-Guerra
 * Projects:
-    * 01: One protein against many ligands: Jaime Rodríguez-Guerra, William Glass, Andrea Volkamer
+    * 01: One protein against many ligands: Jaime Rodríguez-Guerra, William Glass, Alex Payne, John Chodera, Andrea Volkamer
     * WIP: 02: One ligand against several targets: Jaime Rodríguez-Guerra, David Schaller, Andrea Volkamer
     * WIP: 03: Automated interaction statistics for any protein in the PDB: David Schaller, Jaime Rodríguez-Guerra, Andrea Volkamer
 
