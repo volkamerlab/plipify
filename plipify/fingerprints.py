@@ -13,8 +13,9 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from Bio.AlignIO.FastaIO import MultipleSeqAlignment, Seq, SeqRecord
-from Bio.AlignIO import write as write_alignment, read as read_alignment
+from Bio.AlignIO.FastaIO import Seq, SeqRecord
+from Bio.AlignIO import read as read_alignment
+from Bio.SeqIO import write as write_sequences
 
 from .core import ProteinResidue
 
@@ -41,9 +42,28 @@ class InteractionFingerprint:
             "metal",
             "covalent",
         ),
+            split_backbone_sidechain_hbonds=False
     ):
         self.indices = None
+        self.split_backbone_sidechain_hbonds = split_backbone_sidechain_hbonds
         self.interaction_types = interaction_types
+
+    def count_interactions_with_hbond_split(self, residue):
+        """
+        The purpose of this function is to enable the split of sidechain and backbone hydrogen bonds
+        """
+        interaction_types = []
+        for interaction in residue.interactions:
+            int_type = interaction.shorthand
+            if int_type == 'hbond-don' or int_type == 'hbond-acc':
+                sidechain = interaction.interaction["SIDECHAIN"]
+                if sidechain:
+                    int_type += '-sc'
+                else:
+                    int_type += '-bb'
+            interaction_types.append(int_type)
+        counter = Counter(interaction_types)
+        return counter
 
     def calculate_fingerprint(
         self,
@@ -85,7 +105,6 @@ class InteractionFingerprint:
         """
         if residue_indices is None:
             residue_indices = self.calculate_indices_mapping(structures)
-
         if len(structures) != len(residue_indices):
             raise ValueError(
                 f"Number of residue indices mappings ({len(residue_indices)}) "
@@ -191,7 +210,10 @@ class InteractionFingerprint:
         for index_kwargs in indices:
             residue = structure.get_residue_by(**index_kwargs)
             if residue:
-                counter = residue.count_interactions()
+                if self.split_backbone_sidechain_hbonds:
+                    counter = self.count_interactions_with_hbond_split(residue)
+                else:
+                    counter = residue.count_interactions()
             else:
                 # FIXME: This is a bit hacky. Let's see if we can
                 # come up with something more elegant.
@@ -215,10 +237,12 @@ class InteractionFingerprint:
     @staticmethod
     def calculate_indices_mapping(structures):
         """
-        Align sequences of `structures` and provide a mapping of
-        sequence positions to alignment positions (accounting for gaps).
+        Align sequences of `structures` with MUSCLE and map every alignment
+        column to the residue each structure has at that column.
 
-        Only matching residue types are reported.
+        Only columns where all structures with a residue agree on the
+        residue type are reported. Structures with a gap at a reported
+        column get ``seq_index=None``, which is fingerprinted as a GAP.
 
         Parameters
         ----------
@@ -226,54 +250,48 @@ class InteractionFingerprint:
 
         Returns
         -------
-        indices : list of dict[int, int]
+        indices : list of dict[int, dict]
+            One dict per structure, all with the same keys (1-based alignment
+            columns). Values are kwargs for ``Structure.get_residue_by``.
         """
+        # sequence() has "-" for unresolved residues, so the n-th letter
+        # of a sequence sits at seq_index (position in the string + 1)
         sequences = [s.sequence() for s in structures]
-        maxlen = max(len(s) for s in sequences)
-        # pad with ending -
-        sequences = [s if len(s) == maxlen else (s + "-" * (maxlen - len(s))) for s in sequences]
+        seq_indices = [[i + 1 for i, c in enumerate(s) if c != "-"] for s in sequences]
+        ungapped = [s.replace("-", "") for s in sequences]
 
-        identifiers = [s.identifier for s in structures]
-        records = [SeqRecord(Seq(s), id=i) for s, i in zip(sequences, identifiers)]
-        unaligned = MultipleSeqAlignment(records)
+        # positional identifiers: structure identifiers may be missing or duplicated
+        identifiers = [f"s{i}" for i in range(len(structures))]
+        records = [SeqRecord(Seq(s), id=i) for s, i in zip(ungapped, identifiers)]
 
         with TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             infile = str(tmp / "in.fasta")
             outfile = str(tmp / "out.fasta")
             logfile = str(tmp / "log.txt")
-            write_alignment(unaligned, infile, "fasta")
-            cli = f"muscle -super5 {infile} -output {outfile} -log {logfile}"
-            subprocess.call(cmd,
-                            shell=True,
-                            stdout=subprocess.DEVNULL,
-                            stderr=subprocess.STDOUT
-                            )
+            write_sequences(records, infile, "fasta")
+            subprocess.run(['muscle', '-align', infile, '-output', outfile, '-log', logfile])
             aligned = read_alignment(outfile, "fasta")
 
-        offset = unaligned.get_alignment_length() - aligned.get_alignment_length()
+        # muscle reorders sequences in its output
+        aligned_by_id = {record.id: str(record.seq) for record in aligned}
+        rows = [aligned_by_id[i] for i in identifiers]
+        for row, seq in zip(rows, ungapped):
+            assert row.replace("-", "") == seq, "MUSCLE altered an input sequence"
 
-        old2new = []
-        for old in unaligned:
-            new = next(n for n in aligned if n.id == old.id)
-            new = "-" * offset + new
-            old2new.append({})
-            gaps = 0
-            keep = None
-            for i in range(unaligned.get_alignment_length()):
-                oldchar = old[i]
-                newchar = new[i]
-                if oldchar == newchar:
-                    if oldchar == "-":
-                        continue
-                    old2new[-1][i + 1] = {"seq_index": i + 1, "chain": "any"}
-                    if keep is not None:
-                        old2new[-1][keep] = {"seq_index": keep + gaps, "chain": "any"}
-                        gaps = 0
-                        keep = None
-                else:
-                    keep = i + 1
-                    gaps += 1
+        # for each structure, the seq_index at each alignment column (None for gaps)
+        columns = []
+        for row, indices in zip(rows, seq_indices):
+            residues = iter(indices)
+            columns.append([None if c == "-" else next(residues) for c in row])
+
+        old2new = [{} for _ in structures]
+        for col in range(aligned.get_alignment_length()):
+            residue_types = {row[col] for row in rows} - {"-"}
+            if len(residue_types) != 1:
+                continue
+            for mapping, structure_columns in zip(old2new, columns):
+                mapping[col + 1] = {"seq_index": structure_columns[col], "chain": "any"}
         return old2new
 
 
