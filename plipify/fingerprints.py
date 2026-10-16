@@ -6,6 +6,7 @@ Factories that take a Structure or multiple structures and produce
 an interaction fingerprint.
 
 """
+
 import subprocess
 from collections import defaultdict, Counter
 from tempfile import TemporaryDirectory
@@ -42,7 +43,7 @@ class InteractionFingerprint:
             "metal",
             "covalent",
         ),
-            split_backbone_sidechain_hbonds=False
+        split_backbone_sidechain_hbonds=False,
     ):
         self.indices = None
         self.split_backbone_sidechain_hbonds = split_backbone_sidechain_hbonds
@@ -55,12 +56,12 @@ class InteractionFingerprint:
         interaction_types = []
         for interaction in residue.interactions:
             int_type = interaction.shorthand
-            if int_type == 'hbond-don' or int_type == 'hbond-acc':
+            if int_type == "hbond-don" or int_type == "hbond-acc":
                 sidechain = interaction.interaction["SIDECHAIN"]
                 if sidechain:
-                    int_type += '-sc'
+                    int_type += "-sc"
                 else:
-                    int_type += '-bb'
+                    int_type += "-bb"
             interaction_types.append(int_type)
         counter = Counter(interaction_types)
         return counter
@@ -270,7 +271,7 @@ class InteractionFingerprint:
             outfile = str(tmp / "out.fasta")
             logfile = str(tmp / "log.txt")
             write_sequences(records, infile, "fasta")
-            subprocess.run(['muscle', '-align', infile, '-output', outfile, '-log', logfile])
+            subprocess.run(["muscle", "-align", infile, "-output", outfile, "-log", logfile])
             aligned = read_alignment(outfile, "fasta")
 
         # muscle reorders sequences in its output
