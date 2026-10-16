@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - "master"
+      - "plipify-pr15"
   pull_request:
     branches:
       - "master"
+      - "plipify-pr15"
   # schedule:
   #   # Nightly Tests
   #   - cron: "0 0 * * *"
@@ -18,7 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest] # , macOS-latest, windows-latest]
-        python-version: [3.7, 3.8]
+        python-version: [3.11]
     env:
       PYVER: ${{ matrix.python-version }}
       CI_OS: ${{ matrix.os }}
@@ -47,6 +49,7 @@ jobs:
           . devtools/github-actions/initialize_conda.sh
           conda activate
           conda info
+          python -m pip install PyYAML
           python devtools/scripts/create_conda_env.py -n=test -p=$PYVER devtools/conda-envs/test_env.yaml
           conda activate test
 
@@ -85,7 +88,7 @@ jobs:
 
       - uses: actions/setup-python@v2
         with:
-          python-version: "3.7"
+          python-version: "3.11"
 
       - name: Setup packages
         shell: bash

@@ -3,9 +3,11 @@ channels:
   - conda-forge
   - bioconda
   - schrodinger
+  - defaults
 dependencies:
   # Base depends
-  - python < 3.9
+  - python=3.11
+  - pyyaml
   - pip
   - pandas
   - tqdm
@@ -28,6 +30,7 @@ dependencies:
   - biopandas
   - biotite
   - pymol-bundle
+  - catch2=3.16.0 
   # alignment
   - muscle
   # Testing
