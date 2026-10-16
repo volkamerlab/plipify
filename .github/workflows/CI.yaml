@@ -47,6 +47,7 @@ jobs:
           . devtools/github-actions/initialize_conda.sh
           conda activate
           conda info
+          python -m pip install PyYAML
           python devtools/scripts/create_conda_env.py -n=test -p=$PYVER devtools/conda-envs/test_env.yaml
           conda activate test
 
