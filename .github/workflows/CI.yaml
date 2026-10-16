@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - "master"
+      - "plipify-pr15"
   pull_request:
     branches:
       - "master"
+      - "plipify-pr15"
   # schedule:
   #   # Nightly Tests
   #   - cron: "0 0 * * *"
