@@ -632,7 +632,6 @@ class PymolVisualizer(object):
         ray_trace_mode: int = 0,
         flat_sheets: int = 1,
     ):
-
         """
         Set style using PyMol parameters
 
@@ -691,7 +690,6 @@ class PymolVisualizer(object):
         viewport_x: int = 720,
         viewport_y: int = 720,
     ):
-
         """
         Create a PyMol image
 
@@ -851,7 +849,6 @@ class PymolVisualizer(object):
                     print("Couldn't parse supplied view!")
 
     def render(self, name, save_path="./", dpi=300):
-
         """
         Render PyMol image
 
