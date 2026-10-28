@@ -5,7 +5,8 @@ channels:
   - schrodinger
 dependencies:
   # Base depends
-  - python < 3.9
+  - python=3.11
+  - pyyaml
   - pip
   - pandas
   - tqdm

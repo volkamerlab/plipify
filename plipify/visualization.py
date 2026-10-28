@@ -37,6 +37,7 @@ INTERACTION_PALETTE = {
     "hydrophobic": "#029e73",
 }
 
+
 def fingerprint_barplot(fingerprint_df):
     """
     Visualize fingerprint as barplot either based on count or fp_type.
@@ -107,8 +108,11 @@ def _prepare_tabledata(fingerprint_df):
     residues = list(fingerprint_df.index)
 
     ## Reorder fingerprint_df columns to match the INTERACTION PALETTE
-    selected_interaction_palette = {int_type: values for int_type, values in INTERACTION_PALETTE.items() if
-                                    int_type in list(fingerprint_df.columns)}
+    selected_interaction_palette = {
+        int_type: values
+        for int_type, values in INTERACTION_PALETTE.items()
+        if int_type in list(fingerprint_df.columns)
+    }
     fingerprint_df = fingerprint_df.reindex(columns=selected_interaction_palette.keys())
 
     ## so that the resulting table will be in the same order as the INTERACTION PALETTE
@@ -223,8 +227,6 @@ def fingerprint_table(fingerprint_df, as_widget=True, structure=None):
 
         except AttributeError:
             print("Supplied structure argument is not a plipify.core.Structure object!")
-
-
 
     html = f"""
     <style>

@@ -36,7 +36,7 @@ def map_and_show(*structures):
     for structure, mapping in zip(structures, mappings):
         indices = [mapping.get(c, {}).get("seq_index") for c in columns]
         letters = ["-" if i is None else structure.sequence()[i - 1] for i in indices]
-        print(f"{structure.identifier:<10}" + "".join(f"{l:>3}" for l in letters))
+        print(f"{structure.identifier:<10}" + "".join(f"{letter:>3}" for letter in letters))
         print("seq_index " + "".join(f"{'.' if i is None else i:>3}" for i in indices))
     return [list(mapping) for mapping in mappings], [
         [v["seq_index"] for v in mapping.values()] for mapping in mappings
