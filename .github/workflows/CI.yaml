@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest] # , macOS-latest, windows-latest]
-        python-version: [3.7, 3.8]
+        python-version: ["3.11"]
     env:
       PYVER: ${{ matrix.python-version }}
       CI_OS: ${{ matrix.os }}
@@ -26,7 +26,7 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v1
+        uses: actions/checkout@v7
 
       - name: Additional info about the build
         shell: bash
@@ -35,43 +35,38 @@ jobs:
           df -h
           ulimit -a
 
+      - name: Set up Miniconda and create the test environment
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          auto-update-conda: true
+          python-version: ${{ matrix.python-version }}
+          environment-file: devtools/conda-envs/test_env.yaml
+          activate-environment: test
+
       - name: Fix conda in MacOS
         shell: bash
         if: startsWith(matrix.os, 'macOS')
         run: |
           sudo chown -R $(id -u):$(id -g) ${CONDA}
 
-      - name: Create environment for package
-        shell: bash
-        run: |
-          . devtools/github-actions/initialize_conda.sh
-          conda activate
-          conda info
-          python devtools/scripts/create_conda_env.py -n=test -p=$PYVER devtools/conda-envs/test_env.yaml
-          conda activate test
-
       - name: Install package
-        shell: bash
+        shell: bash -el {0}
         run: |
-          . devtools/github-actions/initialize_conda.sh
-          conda activate test
           python -m pip install . --no-deps
           conda list --show-channel-urls
 
       - name: Run tests (pytest)
-        shell: bash
+        shell: bash -el {0}
         run: |
-          . devtools/github-actions/initialize_conda.sh
-          conda activate test
           pytest -v --cov=$PACKAGE --cov-report=xml --color=yes --doctest-modules $PACKAGE/
 
       - name: CodeCov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage.xml
+          files: ./coverage.xml
           flags: unittests
-          yml: ./.codecov.yml
 
   lint-format:
     runs-on: ubuntu-latest
@@ -81,11 +76,11 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v1
+        uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v7
         with:
-          python-version: "3.7"
+          python-version: "3.11"
 
       - name: Setup packages
         shell: bash

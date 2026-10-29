@@ -15,22 +15,24 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import MDAnalysis as mda
 import plotly.graph_objects as go
-import pymol
 import seaborn as sns
-from pymol import cmd, util
 
 from plipify.core import Structure
 
 INTERACTION_PALETTE = {
     "hbond-don": "#0173b2",
     "hbond-acc": "#de8f05",
-    "hydrophobic": "#029e73",
+    "hbond-don-bb": "#0173b2",
+    "hbond-don-sc": "#08C1C9",
+    "hbond-acc-bb": "#de8f05",
+    "hbond-acc-sc": "#F57B07",
     "waterbridge": "#d55e00",
     "saltbridge": "#cc78bc",
     "pistacking": "#ca9161",
     "pication": "#fbafe4",
     "halogen": "#949494",
     "metal": "#ece133",
+    "hydrophobic": "#029e73",
 }
 
 
@@ -102,12 +104,22 @@ def _prepare_tabledata(fingerprint_df):
     """
 
     residues = list(fingerprint_df.index)
+
+    ## Reorder fingerprint_df columns to match the INTERACTION PALETTE
+    selected_interaction_palette = {
+        int_type: values
+        for int_type, values in INTERACTION_PALETTE.items()
+        if int_type in list(fingerprint_df.columns)
+    }
+    fingerprint_df = fingerprint_df.reindex(columns=selected_interaction_palette.keys())
+
+    ## so that the resulting table will be in the same order as the INTERACTION PALETTE
     interaction_types = list(fingerprint_df.columns)
     fingerprint = fingerprint_df.values.tolist()
     fp_id = range(len(residues) * len(interaction_types))  # all fp indices
     interaction_list = interaction_types * len(residues)
     interaction_index = dict(zip(fp_id, interaction_list))
-    return fingerprint, interaction_index, residues
+    return fingerprint_df, fingerprint, interaction_index, residues
 
 
 _TABLE_CSS = """
@@ -197,6 +209,7 @@ def fingerprint_table(fingerprint_df, as_widget=True, structure=None):
         If supplied, will use this to generate residue labels in the form A123 etc
 
     """
+    fingerprint_df, fingerprint, interaction_index, residues = _prepare_tabledata(fingerprint_df)
 
     # if a structure is supplied, get one-letter residues e.g. H163
     ol_residues = None
@@ -212,8 +225,6 @@ def fingerprint_table(fingerprint_df, as_widget=True, structure=None):
 
         except AttributeError:
             print("Supplied structure argument is not a plipify.core.Structure object!")
-
-    fingerprint, interaction_index, residues = _prepare_tabledata(fingerprint_df)
 
     html = f"""
     <style>
@@ -582,6 +593,10 @@ class PymolVisualizer(object):
         self._ligand_interactions = ligand_interactions
         self._verbose = verbose
 
+        # Imported lazily so the module can be imported (e.g. on headless CI) without PyMOL
+        import pymol
+        from pymol import cmd
+
         # Launch pymol session
         if self._verbose:
             print("Launching PyMol session...")
@@ -619,7 +634,6 @@ class PymolVisualizer(object):
         ray_trace_mode: int = 0,
         flat_sheets: int = 1,
     ):
-
         """
         Set style using PyMol parameters
 
@@ -642,6 +656,7 @@ class PymolVisualizer(object):
         flat_sheets: int
             Specify whether beta sheets should be artistically flattened (set to 0 to follow backbone), default = 1
         """
+        from pymol import cmd
 
         # Add filter (ambient) and other misc settings
         # TODO add other options
@@ -678,7 +693,6 @@ class PymolVisualizer(object):
         viewport_x: int = 720,
         viewport_y: int = 720,
     ):
-
         """
         Create a PyMol image
 
@@ -721,6 +735,7 @@ class PymolVisualizer(object):
         viewport_y : int
             Set the viewport dimensions in y, default = 720
         """
+        from pymol import cmd, util
 
         self._viewport_x = viewport_x
         self._viewport_y = viewport_y
@@ -838,7 +853,6 @@ class PymolVisualizer(object):
                     print("Couldn't parse supplied view!")
 
     def render(self, name, save_path="./", dpi=300):
-
         """
         Render PyMol image
 
@@ -852,6 +866,7 @@ class PymolVisualizer(object):
         dpi : float
             The dots per inch of the image, default = 300
         """
+        from pymol import cmd
 
         d = Path(save_path)
         d.mkdir(exist_ok=True, parents=True)
