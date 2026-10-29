@@ -15,9 +15,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import MDAnalysis as mda
 import plotly.graph_objects as go
-import pymol
 import seaborn as sns
-from pymol import cmd, util
 
 from plipify.core import Structure
 
@@ -595,6 +593,10 @@ class PymolVisualizer(object):
         self._ligand_interactions = ligand_interactions
         self._verbose = verbose
 
+        # Imported lazily so the module can be imported (e.g. on headless CI) without PyMOL
+        import pymol
+        from pymol import cmd
+
         # Launch pymol session
         if self._verbose:
             print("Launching PyMol session...")
@@ -654,6 +656,7 @@ class PymolVisualizer(object):
         flat_sheets: int
             Specify whether beta sheets should be artistically flattened (set to 0 to follow backbone), default = 1
         """
+        from pymol import cmd
 
         # Add filter (ambient) and other misc settings
         # TODO add other options
@@ -732,6 +735,7 @@ class PymolVisualizer(object):
         viewport_y : int
             Set the viewport dimensions in y, default = 720
         """
+        from pymol import cmd, util
 
         self._viewport_x = viewport_x
         self._viewport_y = viewport_y
@@ -862,6 +866,7 @@ class PymolVisualizer(object):
         dpi : float
             The dots per inch of the image, default = 300
         """
+        from pymol import cmd
 
         d = Path(save_path)
         d.mkdir(exist_ok=True, parents=True)
