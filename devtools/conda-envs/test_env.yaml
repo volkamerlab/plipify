@@ -29,6 +29,7 @@ dependencies:
   - biopandas
   - biotite
   - pymol-bundle
+  - catch2=3.16.0 
   # alignment
   - muscle
   # Testing
