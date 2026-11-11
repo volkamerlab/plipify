@@ -411,7 +411,7 @@ def nglview_color_side_chains_by_frequency(fp_focused, selected_structure_pdb, l
     by Dominique Sydow.
     """
     import nglview as nv
-    from matplotlib import cm, colors
+    from matplotlib import colormaps, colors
 
     # add sum column
     fp_color = fp_focused.copy()
@@ -419,7 +419,7 @@ def nglview_color_side_chains_by_frequency(fp_focused, selected_structure_pdb, l
     # prepare color maps
     max_n_interactions = fp_color["sum"].max()
     max_n_interactions
-    cmap = cm.get_cmap("Reds", max_n_interactions)
+    cmap = colormaps["Reds"].resampled(max_n_interactions)
     # get residue-color map
     # NGLview needs color as hex code
     fp_color["color"] = fp_color["sum"].apply(lambda x: colors.rgb2hex(cmap(x)))
@@ -514,7 +514,7 @@ def fingerprint_writepdb(
 
         sys_int = u_int.select_atoms(sel_string)
 
-        for resid, value in fingerprint_df[interaction_col].iteritems():  # loop over residues
+        for resid, value in fingerprint_df[interaction_col].items():  # loop over residues
 
             # assign temperature facture value based on interaction value
             sel = sys_int.select_atoms(f"resid {str(resid)}")
@@ -544,7 +544,7 @@ def fingerprint_writepdb(
         u_summed.add_TopologyAttr("tempfactors")
         sys_summed = u_summed.select_atoms(sel_string)
 
-        for resid, summed_ints in fingerprint_df_sum.iteritems():
+        for resid, summed_ints in fingerprint_df_sum.items():
 
             sel_summed = sys_summed.select_atoms(f"resid {str(resid)}")
             sel_summed.atoms.tempfactors = summed_ints

@@ -107,3 +107,15 @@ ENV/
 
 projects/*/data
 projects/*/output
+
+# Ben's gitignore's - to be deleted later
+plipify/Debugging-HOH.md
+plipify/data/sample_pdbs/
+plipify/docs/
+plipify/fingerprints_original.py
+plipify/workflow.ipynb
+fragalysis-master.ipynb
+fragalysis-new.ipynb
+fragalysis-old-w-sort.ipynb
+fragalysis-old.ipynb
+projects/01/Mpro/
