@@ -76,6 +76,7 @@ class InteractionFingerprint:
         remove_non_interacting_residues=False,
         remove_empty_interaction_types=False,
         ensure_same_sequence=True,
+        min_consensus=0.9,
     ):
         """
         Cumulative interaction fingerprint for one or multiple structures.
@@ -103,9 +104,14 @@ class InteractionFingerprint:
         ensure_same_sequence : bool
             if true, check that all residues are identical for each position
             across structures. Only meaningful if cumulative=True
+        min_consensus : float
+            passed to `self.calculate_indices_mapping` when `residue_indices`
+            is not provided; ignored otherwise
         """
         if residue_indices is None:
-            residue_indices = self.calculate_indices_mapping(structures)
+            residue_indices = self.calculate_indices_mapping(
+                structures, min_consensus=min_consensus
+            )
         if len(structures) != len(residue_indices):
             raise ValueError(
                 f"Number of residue indices mappings ({len(residue_indices)}) "
@@ -236,18 +242,23 @@ class InteractionFingerprint:
         self._fingerprint = None
 
     @staticmethod
-    def calculate_indices_mapping(structures):
+    def calculate_indices_mapping(structures, min_consensus=0.9):
         """
         Align sequences of `structures` with MUSCLE and map every alignment
         column to the residue each structure has at that column.
 
-        Only columns where all structures with a residue agree on the
-        residue type are reported. Structures with a gap at a reported
+        A column is reported when at least `min_consensus` of the structures
+        with a residue there share the same (consensus) residue type.
+        Structures with a gap, or with a non-consensus residue, at a reported
         column get ``seq_index=None``, which is fingerprinted as a GAP.
 
         Parameters
         ----------
         structures : list of plipify.core.Structure
+        min_consensus : float
+            fraction (0-1] of structures with a residue at a column that must
+            agree on the residue type for the column to be kept. 1.0 keeps
+            only columns where all structures agree.
 
         Returns
         -------
@@ -287,12 +298,22 @@ class InteractionFingerprint:
             columns.append([None if c == "-" else next(residues) for c in row])
 
         old2new = [{} for _ in structures]
+        # for col in range(aligned.get_alignment_length()):
+        #     residue_types = {row[col] for row in rows} - {"-"}
+        #     if len(residue_types) != 1:
+        #         continue # current problem - would skip this index if there was not 100% one amino acid in this index
+
         for col in range(aligned.get_alignment_length()):
-            residue_types = {row[col] for row in rows} - {"-"}
-            if len(residue_types) != 1:
+            residue_types = Counter(row[col] for row in rows if row[col] != "-")
+            if not residue_types:
                 continue
-            for mapping, structure_columns in zip(old2new, columns):
-                mapping[col + 1] = {"seq_index": structure_columns[col], "chain": "any"}
+            consensus, n_consensus = residue_types.most_common(1)[0]
+            if n_consensus / sum(residue_types.values()) < min_consensus:
+                continue
+            for mapping, row, structure_columns in zip(old2new, rows, columns):
+                # structures with a different residue here count as a gap for this column
+                seq_index = structure_columns[col] if row[col] == consensus else None
+                mapping[col + 1] = {"seq_index": seq_index, "chain": "any"}
         return old2new
 
 
