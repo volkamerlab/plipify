@@ -86,3 +86,47 @@ def test_missing_residues():
     assert keys[0] == keys[1], "a and b must have the same keys"
     assert a == [1, 2, 3, 4, 5, 6, 7, 8]
     assert b == [None, None, 3, 4, 5, None, 7, 8]
+
+
+def _seq_indices(structures, **kwargs):
+    """Mapping as {column: [seq_index per structure]} for the given options."""
+    mappings = InteractionFingerprint.calculate_indices_mapping(list(structures), **kwargs)
+    return {col: [m[col]["seq_index"] for m in mappings] for col in mappings[0]}
+
+
+# nine identical sequences and one with T instead of A at position 4
+_MISMATCH = [FakeStructure(f"wt{i}", "MKTAYW") for i in range(9)] + [FakeStructure("odd", "MKTTYW")]
+
+
+def test_strict_consensus_drops_mismatch_column():
+    """
+    min_consensus=1.0 (the original rule): one odd residue removes column 4 for everyone.
+
+    FAIL if column 4 is kept.
+    """
+    cols = _seq_indices(_MISMATCH, min_consensus=1.0)
+    assert sorted(cols) == [1, 2, 3, 5, 6]
+
+
+def test_consensus_masks_mismatch():
+    """
+    min_consensus=0.9: column 4 is 9/10 = 90% A, so it is kept, and the odd
+    structure gets None there (contributes nothing) while the others keep residue 4.
+
+    FAIL if column 4 is dropped or the odd structure is not masked.
+    """
+    cols = _seq_indices(_MISMATCH, min_consensus=0.9)
+    assert sorted(cols) == [1, 2, 3, 4, 5, 6]
+    assert cols[4] == [4] * 9 + [None]
+
+
+def test_no_masking_keeps_every_residue():
+    """
+    min_consensus=0.0 and mask_mismatches=False: every column is kept and every
+    structure maps to its own residue, including the odd T at position 4.
+
+    FAIL if any structure gets None (there are no gaps in this example).
+    """
+    cols = _seq_indices(_MISMATCH, min_consensus=0.0, mask_mismatches=False)
+    assert sorted(cols) == [1, 2, 3, 4, 5, 6]
+    assert all(v == [col] * 10 for col, v in cols.items())
