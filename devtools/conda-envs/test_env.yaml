@@ -5,7 +5,8 @@ channels:
   - schrodinger
 dependencies:
   # Base depends
-  - python < 3.9
+  - python=3.11
+  - pyyaml
   - pip
   - pandas
   - tqdm
@@ -28,6 +29,7 @@ dependencies:
   - biopandas
   - biotite
   - pymol-bundle
+  - catch2=3.13.0
   # alignment
   - muscle
   # Testing

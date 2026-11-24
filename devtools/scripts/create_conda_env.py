@@ -9,7 +9,7 @@ from contextlib import contextmanager
 # YAML imports
 try:
     import yaml  # PyYAML
-    loader = yaml.load
+    loader = yaml.safe_load
 except ImportError:
     try:
         import ruamel_yaml as yaml  # Ruamel YAML
@@ -92,4 +92,5 @@ with temp_cd():
     temp_file_name = "temp_script.yaml"
     with open(temp_file_name, 'w') as f:
         f.write(yaml.dump(yaml_script))
-    sp.call("{} env create -n {} -f {}".format(conda_path, args.name, temp_file_name), shell=True)
+    # Propagate conda's exit code so a failed env build fails the calling script/CI step
+    raise SystemExit(sp.call("{} env create -n {} -f {}".format(conda_path, args.name, temp_file_name), shell=True))
